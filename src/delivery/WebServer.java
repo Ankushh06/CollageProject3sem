@@ -77,12 +77,16 @@ public class WebServer {
         String pathStr = exchange.getRequestURI().getPath();
         if (pathStr.equals("/") || pathStr.isEmpty()) pathStr = "/index.html";
         if (pathStr.startsWith("/web/")) pathStr = pathStr.substring(4);
+        if (pathStr.startsWith("/public/")) pathStr = pathStr.substring(7);
 
         String relPath = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
         Path file = webRoot.resolve(relPath).normalize();
         if (!Files.exists(file) || Files.isDirectory(file)) {
+            Path pubFile = Paths.get("public").resolve(relPath).normalize();
             Path rootFile = Paths.get(".").resolve(relPath).normalize();
-            if (Files.exists(rootFile) && !Files.isDirectory(rootFile)) {
+            if (Files.exists(pubFile) && !Files.isDirectory(pubFile)) {
+                file = pubFile;
+            } else if (Files.exists(rootFile) && !Files.isDirectory(rootFile)) {
                 file = rootFile;
             } else {
                 sendResponse(exchange, 404, "text/plain", "404 Not Found");
