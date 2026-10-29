@@ -1,15 +1,17 @@
 # RouteFlow - Delivery Route Optimization System
-**DSA (Java) + Relational DBMS (SQLite) + Modern Web Frontend**
+**DSA (Java) + Relational DBMS (Oracle / SQLite) + Tailwind CSS v3 Frontend**
 
-A comprehensive route optimization and logistics platform combining **Dijkstra's Algorithm (DSA)** with a **Relational Database (SQLite DBMS)**, served by an embedded Java backend and an interactive web interface.
+A comprehensive route optimization and logistics platform combining **Dijkstra's Algorithm (DSA)** with a **Dual Relational Database Engine (Oracle Database + SQLite DBMS)**, styled with **Tailwind CSS v3**, served by an embedded Java backend and an interactive web interface.
 
 ---
 
 ## 1. Project Overview
 
 - **DSA Core**: In-memory adjacency list graph representation, binary min-heap (`PriorityQueue`) implementation of Dijkstra's algorithm running in $O((V + E) \log V)$, and a greedy nearest-neighbor TSP delivery tour planner.
-- **DBMS Core**: SQLite relational database (`delivery.db`) with 3NF normalization, foreign key constraints, automated audit triggers (`trg_roads_insert`, `trg_roads_update`), summary views (`v_active_roads`, `v_trip_summary`), and multi-table atomic transactions.
-- **Web Frontend**: High-performance HTML5 canvas map visualizer with draggable nodes, 1-click demo scenarios, interactive road toggling, animated delivery vehicle tracking, and fleet management dashboard.
+- **Dual Relational DBMS (Oracle + SQLite)**: 
+  - **Oracle Database**: Enterprise connection support via official Oracle JDBC Driver (`ojdbc11.jar`), configured via `db.properties`, complete with Oracle DDL (`oracle_schema.sql`), triggers, and views.
+  - **SQLite Fallback**: Built-in zero-configuration local database (`delivery.db`) with 3NF normalization, foreign key constraints, automated audit triggers (`trg_roads_insert`, `trg_roads_update`), summary views (`v_active_roads`, `v_trip_summary`), and multi-table atomic transactions. RouteFlow automatically connects to Oracle if available and gracefully uses SQLite if offline.
+- **Tailwind CSS v3 Frontend**: Built with modern Tailwind CSS v3, glowing neon cyan/emerald badges, glassmorphic obsidian cards, interactive HTML5 canvas map visualizer with draggable nodes, 1-click demo scenarios, interactive road toggling, animated delivery vehicle tracking, and fleet management dashboard.
 
 ---
 
@@ -19,7 +21,7 @@ A comprehensive route optimization and logistics platform combining **Dijkstra's
 .
 ├── src/delivery/               # Java Backend Core (DSA + DBMS)
 │   ├── Criterion.java          # Optimization metric (DISTANCE vs TIME)
-│   ├── Database.java           # SQLite JDBC integration, triggers, views, transactions
+│   ├── Database.java           # Dual Oracle & SQLite JDBC integration, triggers, views, transactions
 │   ├── DeliveryNetwork.java    # Graph representation, Dijkstra's algorithm, TSP planner
 │   ├── DijkstraResult.java     # Distance & predecessor tree structure
 │   ├── Edge.java               # Directed road edge model
@@ -29,14 +31,17 @@ A comprehensive route optimization and logistics platform combining **Dijkstra's
 │   ├── TripPlan.java           # Computed route & stops model
 │   └── WebServer.java          # Embedded HTTP server with REST APIs
 │
-├── web/                        # Modern Web Frontend
-│   ├── index.html              # Interactive dashboard & canvas viewport
-│   ├── style.css               # Obsidian glassmorphism theme & cyber logistics styling
+├── web/                        # Modern Tailwind CSS v3 Web Frontend
+│   ├── index.html              # Tailwind CSS v3 dashboard, canvas viewport & Oracle modal
+│   ├── style.css               # Companion animations, custom scrollbars & map overlays
 │   └── app.js                  # Reactive client, Dijkstra visualizer, animated truck HUD
 │
-├── delivery.db                 # SQLite database file
-├── schema.sql                  # Database schema definitions (tables, constraints, triggers, views)
+├── db.properties               # Database connection configuration (Oracle / SQLite)
+├── oracle_schema.sql           # Oracle Database DDL (tables, triggers, views, sequences)
+├── schema.sql                  # SQLite schema definitions (tables, constraints, triggers, views)
 ├── queries.sql                 # 12 demo SQL queries for DBMS evaluation
+├── delivery.db                 # Local SQLite database file (fallback)
+├── ojdbc11.jar                 # Oracle Database JDBC Driver (23.3)
 ├── sqlite-jdbc.jar             # SQLite JDBC driver (self-contained, no extra downloads)
 ├── run.bat                     # 1-Click launcher for Windows Command Prompt
 ├── run.ps1                     # 1-Click launcher for Windows PowerShell
@@ -66,10 +71,10 @@ run.bat
 #### Option C: Direct Java Commands
 ```bash
 # 1. Compile Java sources into bin/
-javac -cp sqlite-jdbc.jar -d bin src/delivery/*.java
+javac -cp "sqlite-jdbc.jar;ojdbc11.jar" -d bin src/delivery/*.java
 
 # 2. Run application (starts Web Server + CLI)
-java -cp "bin;sqlite-jdbc.jar" delivery.Main
+java -cp "bin;sqlite-jdbc.jar;ojdbc11.jar" delivery.Main
 ```
 
 Once started, open your browser to:
@@ -77,7 +82,28 @@ Once started, open your browser to:
 
 ---
 
-## 4. Key Features & User Interface
+## 4. Oracle Database Configuration
+RouteFlow supports direct connection to your Oracle Database (e.g. Oracle XE, Oracle Free 23c, Oracle 19c/21c).
+
+1. Edit **`db.properties`** in the project root:
+   ```properties
+   db.mode=AUTO
+   oracle.host=localhost
+   oracle.port=1521
+   oracle.service=FREEPDB1
+   oracle.user=SYSTEM
+   oracle.password=YourPasswordHere
+   ```
+2. (Optional) Run `oracle_schema.sql` in SQL*Plus or Oracle SQL Developer if initializing manually:
+   ```bash
+   sqlplus SYSTEM/YourPasswordHere@localhost:1521/FREEPDB1 @oracle_schema.sql
+   ```
+3. Restart RouteFlow with `.\run.ps1`. The top status pill will display **`Oracle DB`** in vibrant rose with real-time status!
+*(Note: If Oracle is offline or not installed, RouteFlow seamlessly defaults to SQLite so your demo never fails!)*
+
+---
+
+## 5. Key Features & User Interface
 
 ### 🎯 1-Click Demo Scenarios
 - **🚀 Warehouse ➔ Airport**: Computes the optimal single route and launches the animated delivery vehicle.
@@ -98,11 +124,11 @@ Step-by-step navigation breakdown detailing distance, travel time, and intermedi
 - **Trip History**: View all recorded trips joined with driver, vehicle, and stop counts (`v_trip_summary`).
 - **Driver Performance**: Analyze total distance driven, trips completed, and average duration per driver.
 - **Top Visited Locations**: Frequency rankings of the most popular delivery destinations.
-- **Road Audit Trail**: Real-time log populated by SQLite triggers tracking `ADDED`, `CLOSED`, `REOPENED`, and `UPDATED` road events.
+- **Road Audit Trail**: Real-time log populated by database triggers tracking `ADDED`, `CLOSED`, `REOPENED`, and `UPDATED` road events.
 
 ---
 
-## 5. Database Schema & Design
+## 6. Database Schema & Design
 
 ### Relational Tables
 1. **`locations`**: Unique locations (Depots, Customers, Landmarks).
@@ -119,7 +145,7 @@ Step-by-step navigation breakdown detailing distance, travel time, and intermedi
 
 ---
 
-## 6. Demo SQL Queries
+## 7. Demo SQL Queries
 Run DBMS evaluation queries against the database using the SQLite CLI:
 ```bash
 sqlite3 delivery.db < queries.sql

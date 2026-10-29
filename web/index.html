@@ -1,498 +1,483 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RouteFlow - Delivery Route Optimization System (DSA + DBMS)</title>
-  <meta name="description" content="User-friendly intelligent delivery route planner with Dijkstra's algorithm, interactive map, real-time road closures, and SQLite fleet analytics.">
+  <title>RouteFlow - Intelligent Delivery Route Optimization (DSA + Oracle/SQLite DBMS)</title>
+  <meta name="description" content="AI-ready route optimization platform with Dijkstra's algorithm, interactive canvas map, real-time road closures, and dual Oracle Database & SQLite fleet analytics.">
+  
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS v3 via Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              950: '#060913',
+              900: '#0b1120',
+              850: '#0e172a',
+              800: '#111a2e',
+              750: '#15223c',
+              700: '#1b2640',
+              600: '#283556'
+            },
+            brand: {
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              violet: '#8b5cf6'
+            }
+          },
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 20px rgba(6, 182, 212, 0.35)',
+            'glow-emerald': '0 0 20px rgba(16, 185, 129, 0.35)',
+            'glow-amber': '0 0 20px rgba(245, 158, 11, 0.35)',
+            'card-dark': '0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08)'
+          }
+        }
+      }
+    }
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <!-- Ambient background glow layers -->
-  <div class="bg-glow bg-glow-1"></div>
-  <div class="bg-glow bg-glow-2"></div>
-  <div class="bg-glow bg-glow-3"></div>
+<body class="bg-navy-950 text-slate-100 font-sans h-screen w-screen overflow-hidden select-none antialiased">
+
+  <!-- Ambient background glow mesh -->
+  <div class="fixed -top-24 left-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="fixed -bottom-24 right-1/4 w-[30rem] h-[30rem] bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="fixed top-1/2 left-1/2 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- Top Navigation Header -->
-  <header class="navbar" id="appHeader">
-    <div class="nav-left">
-      <div class="brand-logo" id="btnLogo">
-        <div class="logo-icon-wrap">
-          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-          <span class="pulse-ring"></span>
+  <header class="relative z-30 h-16 bg-navy-900/90 backdrop-blur-xl border-b border-white/10 px-5 flex items-center justify-between gap-4">
+    <!-- Brand Logo -->
+    <div class="flex items-center gap-3 shrink-0 cursor-pointer" id="btnLogo">
+      <div class="relative w-9 h-9 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400">
+        <svg class="w-5 h-5 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        <span class="absolute -inset-1 rounded-xl border border-cyan-400/30 animate-ping opacity-25"></span>
+      </div>
+      <div>
+        <div class="font-heading font-extrabold text-lg text-white leading-tight tracking-wide">
+          ROUTE<span class="text-cyan-400">FLOW</span>
         </div>
-        <div class="brand-text">
-          <div class="brand-title">ROUTE<span>FLOW</span></div>
-          <div class="brand-subtitle">Smart Delivery Routing • DSA + DBMS</div>
-        </div>
+        <div class="text-[10px] text-slate-400 font-medium">DSA Dijkstra • Oracle / SQLite DBMS</div>
       </div>
     </div>
 
-    <!-- Quick 1-Click Demo Scenarios Strip -->
-    <div class="quick-scenarios-strip">
-      <span class="scenarios-label">⚡ 1-Click Demos:</span>
-      <button type="button" class="scenario-chip" id="demoPointToPoint" title="Calculate shortest route from Warehouse to Airport">
+    <!-- 1-Click Interactive Scenarios Ribbon -->
+    <div class="hidden lg:flex items-center gap-2 bg-black/40 border border-white/10 rounded-full py-1 px-3">
+      <span class="text-xs font-bold text-cyan-400 font-heading uppercase tracking-wider mr-1">⚡ Demos:</span>
+      <button type="button" id="demoPointToPoint" class="px-3 py-1 bg-white/5 hover:bg-cyan-500/20 hover:border-cyan-400/50 border border-white/10 rounded-full text-xs font-semibold text-slate-200 transition-all hover:-translate-y-0.5">
         🚀 Warehouse ➔ Airport
       </button>
-      <button type="button" class="scenario-chip" id="demoMultiStop" title="Optimize multi-stop delivery tour for 4 customers">
+      <button type="button" id="demoMultiStop" class="px-3 py-1 bg-white/5 hover:bg-cyan-500/20 hover:border-cyan-400/50 border border-white/10 rounded-full text-xs font-semibold text-slate-200 transition-all hover:-translate-y-0.5">
         📦 4-Stop Delivery Tour
       </button>
-      <button type="button" class="scenario-chip" id="demoClosure" title="Simulate a road closure and watch Dijkstra find an alternative detour">
+      <button type="button" id="demoClosure" class="px-3 py-1 bg-white/5 hover:bg-rose-500/20 hover:border-rose-400/50 border border-white/10 rounded-full text-xs font-semibold text-slate-200 transition-all hover:-translate-y-0.5">
         🚧 Road Closure Detour
       </button>
-      <button type="button" class="scenario-chip chip-reset" id="demoReset" title="Clear current route and reset selection">
-        🔄 Clear Route
+      <button type="button" id="demoReset" class="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 rounded-full text-xs font-semibold text-rose-300 transition-all">
+        🔄 Clear
       </button>
     </div>
 
-    <!-- Right Controls -->
-    <div class="nav-right">
-      <!-- Mode Toggle -->
-      <div class="mode-toggle-group" title="Choose optimization metric">
-        <button type="button" class="mode-pill active" id="btnModeDistance" data-mode="DISTANCE">
-          <span>📏</span> Distance
+    <!-- Top Right Status & Controls -->
+    <div class="flex items-center gap-3 shrink-0">
+      <!-- Active Database Badge (Oracle / SQLite) -->
+      <button type="button" id="btnDbConfig" class="flex items-center gap-2 px-3 py-1.5 bg-navy-800 hover:bg-navy-750 border border-white/10 rounded-full text-xs transition cursor-pointer" title="View Database Engine Details">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" id="dbEngineDot"></span>
+        <span class="font-heading font-semibold text-slate-200" id="dbEngineLabel">Oracle / SQLite</span>
+      </button>
+
+      <!-- Optimization Metric Toggle (Distance vs Time) -->
+      <div class="flex bg-black/40 border border-white/10 rounded-full p-0.5">
+        <button type="button" id="btnModeDistance" data-mode="DISTANCE" class="mode-pill active px-3 py-1 rounded-full text-xs font-heading font-semibold text-slate-300 transition-all">
+          📏 Distance
         </button>
-        <button type="button" class="mode-pill" id="btnModeTime" data-mode="TIME">
-          <span>⏱️</span> Time
+        <button type="button" id="btnModeTime" data-mode="TIME" class="mode-pill px-3 py-1 rounded-full text-xs font-heading font-semibold text-slate-300 transition-all">
+          ⏱️ Time
         </button>
       </div>
 
-      <button class="btn btn-ghost btn-sm" id="btnReloadSample" title="Reset map to clean default city">
+      <!-- Quick Action Buttons -->
+      <button type="button" id="btnReloadSample" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition" title="Restore sample city layout">
         <span>🔄</span> Reset City
       </button>
-
-      <button class="btn btn-ghost btn-sm" id="btnOpenDocs" title="System Architecture & Query Guide">
+      <button type="button" id="btnOpenDocs" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition" title="Architecture & Query Guide">
         <span>ℹ️</span> Docs
       </button>
     </div>
   </header>
 
-  <!-- Guided Quick-Start Notification Banner -->
-  <div class="guided-helper-banner" id="helperBanner">
-    <div class="banner-content">
-      <span class="banner-icon">💡</span>
-      <span class="banner-text"><strong>Easy Routing:</strong> Click any location on the map to set your <strong>Start</strong> point, click another to set your <strong>Destination</strong>, or click any road directly to <strong>Close / Open</strong> it!</span>
+  <!-- Guided Quick-Start Helper Banner -->
+  <div id="helperBanner" class="relative z-20 bg-gradient-to-r from-cyan-950/60 via-navy-900 to-emerald-950/60 border-b border-cyan-500/20 px-5 py-1.5 flex items-center justify-between text-xs text-slate-300">
+    <div class="flex items-center gap-2">
+      <span class="text-sm">💡</span>
+      <span><strong>Interactive City Map:</strong> Click any location on the map to set your <strong>Start</strong> point, click another for your <strong>Destination</strong>, or click any road directly to <strong>Close / Open</strong> it!</span>
     </div>
-    <button class="banner-dismiss" id="btnDismissBanner" title="Dismiss hint">&times;</button>
+    <button type="button" id="btnDismissBanner" class="text-slate-400 hover:text-white text-base leading-none">&times;</button>
   </div>
 
-  <!-- Main Application Workspace -->
-  <main class="app-layout" id="appLayout">
-    <!-- Collapsible Left Sidebar -->
-    <aside class="sidebar-panel" id="sidebarPanel">
+  <!-- Main Application Layout -->
+  <main class="relative z-10 flex h-[calc(100vh-64px-33px)] w-screen overflow-hidden" id="appLayout">
+    
+    <!-- Collapsible Sidebar Panel -->
+    <aside id="sidebarPanel" class="w-[450px] shrink-0 bg-navy-900/90 backdrop-blur-2xl border-r border-white/10 flex flex-col overflow-hidden transition-all duration-300">
+      
       <!-- Tab Headers -->
-      <nav class="sidebar-nav">
-        <button class="nav-tab active" data-tab="tabPlanner" id="tabNavPlanner">
-          <span class="tab-icon">🎯</span>
-          <span class="tab-label">Plan Route</span>
+      <nav class="grid grid-cols-4 bg-navy-950/80 border-b border-white/10 p-1 gap-1 shrink-0">
+        <button type="button" data-tab="tabPlanner" class="nav-tab active flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-heading font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition">
+          <span class="text-base">🎯</span>
+          <span>Plan Route</span>
         </button>
-        <button class="nav-tab" data-tab="tabNetwork" id="tabNavNetwork">
-          <span class="tab-icon">🗺️</span>
-          <span class="tab-label">Roads & Closures</span>
+        <button type="button" data-tab="tabNetwork" class="nav-tab flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-heading font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition">
+          <span class="text-base">🗺️</span>
+          <span>Roads</span>
         </button>
-        <button class="nav-tab" data-tab="tabFleet" id="tabNavFleet">
-          <span class="tab-icon">🚚</span>
-          <span class="tab-label">Drivers & Fleet</span>
+        <button type="button" data-tab="tabFleet" class="nav-tab flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-heading font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition">
+          <span class="text-base">🚚</span>
+          <span>Fleet</span>
         </button>
-        <button class="nav-tab" data-tab="tabAnalytics" id="tabNavAnalytics">
-          <span class="tab-icon">📊</span>
-          <span class="tab-label">Trip Logs</span>
+        <button type="button" data-tab="tabAnalytics" class="nav-tab flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-heading font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition">
+          <span class="text-base">📊</span>
+          <span>DBMS Logs</span>
         </button>
       </nav>
 
-      <!-- Sidebar Body -->
-      <div class="sidebar-content">
+      <!-- Sidebar Body Content -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        
         <!-- TAB 1: ROUTE PLANNER -->
-        <section class="tab-pane active" id="tabPlanner">
-          <!-- Sub-mode Selector -->
-          <div class="segmented-control">
-            <button type="button" class="segment-btn active" id="btnSubPointToPoint">
+        <section id="tabPlanner" class="tab-pane active space-y-4">
+          <!-- Submode Toggle: Single vs Multi-stop -->
+          <div class="flex bg-black/40 border border-white/10 rounded-xl p-1">
+            <button type="button" id="btnSubPointToPoint" class="segment-btn active flex-1 py-1.5 rounded-lg text-xs font-heading font-semibold transition text-slate-300">
               📍 Single Route (A ➔ B)
             </button>
-            <button type="button" class="segment-btn" id="btnSubMultiStop">
+            <button type="button" id="btnSubMultiStop" class="segment-btn flex-1 py-1.5 rounded-lg text-xs font-heading font-semibold transition text-slate-300">
               📦 Multi-Stop Tour (TSP)
             </button>
           </div>
 
-          <!-- SINGLE ROUTE FORM -->
-          <div class="planner-box" id="formPointToPoint">
-            <!-- Visual Chip Picker for Source -->
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-badge start-badge">A</span> Starting Point (Source)
+          <!-- SINGLE ROUTE VIEW -->
+          <div id="formPointToPoint" class="space-y-3">
+            <!-- Source Chip Picker -->
+            <div>
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">A</span>
+                Starting Point (Origin / Depot)
               </label>
-              <div class="quick-chip-picker" id="chipsSource">
-                <!-- Location chips generated dynamically -->
-              </div>
-              <select id="selectSource" class="form-select mt-1 hidden"></select>
+              <div id="chipsSource" class="flex flex-wrap gap-1.5 p-2 bg-navy-950/70 border border-white/10 rounded-xl max-h-32 overflow-y-auto custom-scrollbar"></div>
+              <select id="selectSource" class="hidden"></select>
             </div>
 
-            <div class="swap-locations-row">
-              <button type="button" class="btn-icon-swap" id="btnSwapLocations" title="Swap Source and Destination">
-                ⇅ Swap Start & End
+            <!-- Swap Button -->
+            <div class="flex justify-center -my-1">
+              <button type="button" id="btnSwapLocations" class="px-3 py-1 rounded-full bg-white/5 hover:bg-cyan-500/20 border border-white/10 text-xs font-semibold text-slate-300 hover:text-cyan-400 transition flex items-center gap-1.5">
+                ⇅ Swap Start & Destination
               </button>
             </div>
 
-            <!-- Visual Chip Picker for Destination -->
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-badge end-badge">B</span> Destination Point
+            <!-- Destination Chip Picker -->
+            <div>
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">B</span>
+                Destination Point
               </label>
-              <div class="quick-chip-picker" id="chipsDestination">
-                <!-- Location chips generated dynamically -->
-              </div>
-              <select id="selectDestination" class="form-select mt-1 hidden"></select>
+              <div id="chipsDestination" class="flex flex-wrap gap-1.5 p-2 bg-navy-950/70 border border-white/10 rounded-xl max-h-32 overflow-y-auto custom-scrollbar"></div>
+              <select id="selectDestination" class="hidden"></select>
             </div>
 
-            <button type="button" class="btn btn-primary btn-block btn-lg btn-glow" id="btnCalculateRoute">
-              <span class="btn-icon">🚀</span> Calculate Optimal Route (Dijkstra)
+            <button type="button" id="btnCalculateRoute" class="w-full py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-heading font-bold text-sm rounded-xl shadow-glow-cyan transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+              <span>🚀</span> Calculate Shortest Route (Dijkstra)
             </button>
           </div>
 
-          <!-- MULTI-STOP DELIVERY FORM -->
-          <div class="planner-box hidden" id="formMultiStop">
-            <div class="form-group">
-              <label class="form-label">
-                <span class="label-badge start-badge">Depot</span> Starting Hub / Warehouse
+          <!-- MULTI-STOP DELIVERY VIEW -->
+          <div id="formMultiStop" class="space-y-3 hidden">
+            <div>
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">DEPOT</span>
+                Starting Hub / Depot
               </label>
-              <div class="quick-chip-picker" id="chipsDepot"></div>
-              <select id="selectDepot" class="form-select mt-1 hidden"></select>
+              <div id="chipsDepot" class="flex flex-wrap gap-1.5 p-2 bg-navy-950/70 border border-white/10 rounded-xl max-h-28 overflow-y-auto custom-scrollbar"></div>
+              <select id="selectDepot" class="hidden"></select>
             </div>
 
-            <div class="form-group">
-              <div class="label-with-action">
-                <label class="form-label">Select Delivery Stops</label>
-                <div class="stop-quick-actions">
-                  <button type="button" class="btn-link" id="btnSelectAllStops">Select All</button>
-                  <span class="sep">•</span>
-                  <button type="button" class="btn-link" id="btnClearAllStops">Clear</button>
+            <div>
+              <div class="flex items-center justify-between mb-1.5 text-xs">
+                <span class="font-semibold text-slate-300">Select Customer Stops:</span>
+                <div class="space-x-2 text-[11px]">
+                  <button type="button" id="btnSelectAllStops" class="text-cyan-400 hover:underline">Select All</button>
+                  <span class="text-slate-500">•</span>
+                  <button type="button" id="btnClearAllStops" class="text-cyan-400 hover:underline">Clear</button>
                 </div>
               </div>
-              <div class="stops-checkbox-grid" id="stopsCheckboxList">
-                <!-- Populated dynamically with toggleable cards -->
-              </div>
+              <div id="stopsCheckboxList" class="grid grid-cols-2 gap-2 p-2.5 bg-navy-950/70 border border-white/10 rounded-xl max-h-40 overflow-y-auto custom-scrollbar"></div>
             </div>
 
-            <div class="form-check-group">
-              <label class="toggle-switch">
-                <input type="checkbox" id="chkReturnDepot" checked>
-                <span class="toggle-slider"></span>
+            <div class="flex items-center gap-3 py-1">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="chkReturnDepot" checked class="sr-only peer">
+                <div class="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
               </label>
-              <span class="toggle-label">Return to depot after completing all stops</span>
+              <span class="text-xs text-slate-300">Return to depot after all stops</span>
             </div>
 
-            <button type="button" class="btn btn-primary btn-block btn-lg btn-glow" id="btnCalculateMultiStop">
-              <span class="btn-icon">⚡</span> Optimize Delivery Sequence
+            <button type="button" id="btnCalculateMultiStop" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-heading font-bold text-sm rounded-xl shadow-glow-emerald transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+              <span>⚡</span> Optimize Delivery Sequence
             </button>
           </div>
 
           <!-- ROUTE RESULT & TURN-BY-TURN CARD -->
-          <div class="route-result-card hidden" id="routeResultCard">
-            <div class="result-header">
-              <div class="result-title-wrap">
-                <span class="result-badge" id="resultModeBadge">DISTANCE</span>
-                <span class="result-title">Optimal Route Found</span>
+          <div id="routeResultCard" class="hidden bg-navy-850 border border-cyan-500/30 rounded-2xl p-4 shadow-card-dark space-y-3.5 animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span id="resultModeBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">DISTANCE</span>
+                <span class="font-heading font-bold text-white text-sm">Optimal Route Calculated</span>
               </div>
-              <button class="btn-close-result" id="btnCloseResult" title="Clear result">&times;</button>
+              <button type="button" id="btnCloseResult" class="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
             </div>
 
-            <!-- Big Stat KPI Cards -->
-            <div class="result-kpis">
-              <div class="kpi-box">
-                <div class="kpi-num" id="resTotalKm">0.0</div>
-                <div class="kpi-unit">Kilometres</div>
+            <!-- Big Stat KPIs -->
+            <div class="grid grid-cols-3 bg-black/40 border border-white/10 rounded-xl p-2.5 text-center divide-x divide-white/10">
+              <div>
+                <div id="resTotalKm" class="font-mono text-base font-bold text-white">0.0</div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Kilometres</div>
               </div>
-              <div class="kpi-divider"></div>
-              <div class="kpi-box">
-                <div class="kpi-num" id="resTotalMin">0.0</div>
-                <div class="kpi-unit">Travel Time</div>
+              <div>
+                <div id="resTotalMin" class="font-mono text-base font-bold text-emerald-400">0m</div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Travel Time</div>
               </div>
-              <div class="kpi-divider"></div>
-              <div class="kpi-box">
-                <div class="kpi-num" id="resLegsCount">0</div>
-                <div class="kpi-unit">Road Legs</div>
-              </div>
-            </div>
-
-            <!-- Turn-by-Turn Visual Timeline -->
-            <div class="timeline-container">
-              <div class="timeline-title">Turn-by-Turn Driving Directions:</div>
-              <div class="turn-timeline" id="resTurnTimeline">
-                <!-- Step by step directions -->
+              <div>
+                <div id="resLegsCount" class="font-mono text-base font-bold text-cyan-400">0</div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Road Legs</div>
               </div>
             </div>
 
-            <!-- Direct SQLite Save Section -->
-            <div class="save-trip-section">
-              <div class="save-trip-title">💾 Save Trip to SQLite Database</div>
-              <div class="save-trip-form-grid">
-                <div class="form-group-compact">
-                  <label for="selectTripDriver" class="form-label-xs">Assign Driver:</label>
-                  <select id="selectTripDriver" class="form-select form-select-sm"></select>
+            <!-- Turn-by-Turn Driving Directions -->
+            <div>
+              <div class="text-xs font-heading font-bold text-slate-300 mb-2">Turn-by-Turn Itinerary:</div>
+              <div id="resTurnTimeline" class="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar pr-1"></div>
+            </div>
+
+            <!-- Save to Oracle/SQLite Database -->
+            <div class="p-3 bg-black/30 border border-white/10 rounded-xl space-y-2">
+              <div class="text-xs font-heading font-semibold text-white flex items-center gap-1.5">
+                <span>💾</span> Commit Trip to Database
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">Assign Driver:</label>
+                  <select id="selectTripDriver" class="w-full bg-navy-950 border border-white/10 rounded-lg p-1.5 text-xs text-white focus:border-cyan-400 outline-none"></select>
                 </div>
-                <div class="form-group-compact">
-                  <label for="selectTripVehicle" class="form-label-xs">Assign Vehicle:</label>
-                  <select id="selectTripVehicle" class="form-select form-select-sm"></select>
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">Assign Vehicle:</label>
+                  <select id="selectTripVehicle" class="w-full bg-navy-950 border border-white/10 rounded-lg p-1.5 text-xs text-white focus:border-cyan-400 outline-none"></select>
                 </div>
               </div>
-              <button type="button" class="btn btn-emerald btn-block" id="btnSaveTrip">
-                Commit Trip to Database (Transaction)
+              <button type="button" id="btnSaveTrip" class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-heading font-bold transition">
+                Commit & Save Trip (Atomic Transaction)
               </button>
-              <div class="save-feedback hidden" id="saveTripFeedback"></div>
+              <div id="saveTripFeedback" class="hidden p-2 rounded-lg text-xs font-medium"></div>
             </div>
           </div>
         </section>
 
         <!-- TAB 2: ROAD NETWORK & CLOSURES -->
-        <section class="tab-pane" id="tabNetwork">
-          <!-- Road Closure Simulator -->
-          <div class="accordion-card">
-            <div class="card-header-styled">
-              <span class="card-icon">🚧</span>
+        <section id="tabNetwork" class="tab-pane space-y-4 hidden">
+          <!-- Road Closure Simulator Card -->
+          <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🚧</span>
               <div>
-                <h3>Interactive Road Closure Simulator</h3>
-                <div class="subtext">Toggle roads below or <strong>click directly on roads</strong> on the map!</div>
+                <h3 class="font-heading font-bold text-sm text-white">Road Closure Simulator</h3>
+                <div class="text-[11px] text-slate-400">Toggle roads below or <strong>click directly on roads</strong> on the map!</div>
               </div>
             </div>
-            <div class="road-closure-list" id="roadClosureList">
-              <!-- Dynamically populated toggle list -->
-            </div>
+            <div id="roadClosureList" class="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
           </div>
 
-          <!-- Add Location -->
-          <div class="accordion-card mt-3">
-            <div class="card-header-styled">
-              <span class="card-icon">📍</span>
-              <h3>Add New City Location</h3>
+          <!-- Add Location Form -->
+          <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">📍</span>
+              <h3 class="font-heading font-bold text-sm text-white">Add New Location</h3>
             </div>
-            <form id="formAddLocation" onsubmit="return false;">
-              <div class="form-group">
-                <label for="locNameInput" class="form-label">Location Name</label>
-                <input type="text" id="locNameInput" class="form-input" placeholder="e.g. City Plaza" required>
-              </div>
-              <div class="form-group">
-                <label for="locTypeSelect" class="form-label">Location Type</label>
-                <select id="locTypeSelect" class="form-select">
-                  <option value="CUSTOMER">🛒 Customer (Delivery destination)</option>
-                  <option value="WAREHOUSE">🏢 Warehouse (Depot hub)</option>
-                  <option value="LANDMARK">🏛️ Landmark / Transit hub</option>
-                </select>
-              </div>
-              <button type="button" class="btn btn-secondary btn-block" id="btnAddLocation">
-                + Add Location to Database
+            <div class="space-y-2 text-xs">
+              <input type="text" id="locNameInput" placeholder="Location Name (e.g., Grand Mall)" class="w-full bg-navy-950 border border-white/10 rounded-xl p-2.5 text-white focus:border-cyan-400 outline-none">
+              <select id="locTypeSelect" class="w-full bg-navy-950 border border-white/10 rounded-xl p-2.5 text-white focus:border-cyan-400 outline-none">
+                <option value="CUSTOMER">🛒 Customer (Delivery Point)</option>
+                <option value="WAREHOUSE">🏢 Warehouse (Depot Hub)</option>
+                <option value="LANDMARK">🏛️ Landmark / Transit Station</option>
+              </select>
+              <button type="button" id="btnAddLocation" class="w-full py-2 bg-white/10 hover:bg-white/15 text-white font-heading font-bold rounded-xl transition">
+                + Add Location
               </button>
-            </form>
+            </div>
           </div>
 
-          <!-- Add / Edit Road -->
-          <div class="accordion-card mt-3">
-            <div class="card-header-styled">
-              <span class="card-icon">🛣️</span>
-              <h3>Connect Locations with a Road</h3>
+          <!-- Add Road Form -->
+          <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🛣️</span>
+              <h3 class="font-heading font-bold text-sm text-white">Connect Road Between Places</h3>
             </div>
-            <form id="formAddRoad" onsubmit="return false;">
-              <div class="form-row-2">
-                <div class="form-group">
-                  <label for="roadFromSelect" class="form-label">Location A</label>
-                  <select id="roadFromSelect" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label for="roadToSelect" class="form-label">Location B</label>
-                  <select id="roadToSelect" class="form-select"></select>
-                </div>
+            <div class="space-y-2 text-xs">
+              <div class="grid grid-cols-2 gap-2">
+                <select id="roadFromSelect" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none"></select>
+                <select id="roadToSelect" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none"></select>
               </div>
-              <div class="form-row-2">
-                <div class="form-group">
-                  <label for="roadDistanceInput" class="form-label">Distance (km)</label>
-                  <input type="number" id="roadDistanceInput" class="form-input" min="0.1" step="0.1" placeholder="5.0" required>
-                </div>
-                <div class="form-group">
-                  <label for="roadTimeInput" class="form-label">Time (min)</label>
-                  <input type="number" id="roadTimeInput" class="form-input" min="0.1" step="0.1" placeholder="12.0" required>
-                </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="number" id="roadDistanceInput" placeholder="Distance (km)" min="0.1" step="0.1" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
+                <input type="number" id="roadTimeInput" placeholder="Time (min)" min="0.1" step="0.1" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
               </div>
-              <button type="button" class="btn btn-secondary btn-block" id="btnAddRoad">
+              <button type="button" id="btnAddRoad" class="w-full py-2 bg-white/10 hover:bg-white/15 text-white font-heading font-bold rounded-xl transition">
                 Save Road Connection
               </button>
-            </form>
+            </div>
           </div>
         </section>
 
         <!-- TAB 3: FLEET & DRIVERS -->
-        <section class="tab-pane" id="tabFleet">
-          <div class="accordion-card">
-            <div class="card-header-styled">
-              <span class="card-icon">🧑‍✈️</span>
-              <h3>Delivery Drivers</h3>
+        <section id="tabFleet" class="tab-pane space-y-4 hidden">
+          <!-- Drivers -->
+          <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🧑‍✈️</span>
+              <h3 class="font-heading font-bold text-sm text-white">Delivery Drivers</h3>
             </div>
-            <form id="formAddDriver" onsubmit="return false;" class="mb-3">
-              <div class="form-row-2">
-                <div class="form-group">
-                  <label for="driverNameInput" class="form-label">Name</label>
-                  <input type="text" id="driverNameInput" class="form-input" placeholder="e.g. Rahul Sharma" required>
-                </div>
-                <div class="form-group">
-                  <label for="driverPhoneInput" class="form-label">Phone (7-15 digits)</label>
-                  <input type="tel" id="driverPhoneInput" class="form-input" placeholder="e.g. 9876543210" required>
-                </div>
-              </div>
-              <button type="button" class="btn btn-secondary btn-block" id="btnAddDriver">+ Register Driver</button>
-            </form>
-            <div class="table-scroll-wrapper">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                  </tr>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <input type="text" id="driverNameInput" placeholder="Driver Name" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
+              <input type="tel" id="driverPhoneInput" placeholder="Phone Number" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
+            </div>
+            <button type="button" id="btnAddDriver" class="w-full py-1.5 bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-xs rounded-xl transition">
+              + Register Driver
+            </button>
+            <div class="max-h-40 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-navy-950/80 text-slate-400 sticky top-0">
+                  <tr><th class="p-2">ID</th><th class="p-2">Name</th><th class="p-2">Phone</th></tr>
                 </thead>
-                <tbody id="driverRosterBody"></tbody>
+                <tbody id="driverRosterBody" class="divide-y divide-white/5 text-slate-300"></tbody>
               </table>
             </div>
           </div>
 
-          <div class="accordion-card mt-3">
-            <div class="card-header-styled">
-              <span class="card-icon">🚚</span>
-              <h3>Vehicle Fleet</h3>
+          <!-- Vehicles -->
+          <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🚚</span>
+              <h3 class="font-heading font-bold text-sm text-white">Fleet Vehicles</h3>
             </div>
-            <form id="formAddVehicle" onsubmit="return false;" class="mb-3">
-              <div class="form-group">
-                <label for="vehicleRegInput" class="form-label">Registration Plate</label>
-                <input type="text" id="vehicleRegInput" class="form-input" placeholder="e.g. DL-01-AB-1234" required>
+            <div class="space-y-2 text-xs">
+              <input type="text" id="vehicleRegInput" placeholder="Reg Number (e.g., DL-01-AB-1234)" class="w-full bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
+              <div class="grid grid-cols-2 gap-2">
+                <select id="vehicleTypeSelect" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
+                  <option value="VAN">Van</option>
+                  <option value="BIKE">Bike</option>
+                  <option value="TRUCK">Truck</option>
+                </select>
+                <input type="number" id="vehicleCapInput" placeholder="Capacity (kg)" min="1" step="10" class="bg-navy-950 border border-white/10 rounded-xl p-2 text-white focus:border-cyan-400 outline-none">
               </div>
-              <div class="form-row-2">
-                <div class="form-group">
-                  <label for="vehicleTypeSelect" class="form-label">Type</label>
-                  <select id="vehicleTypeSelect" class="form-select">
-                    <option value="VAN">Van</option>
-                    <option value="BIKE">Bike</option>
-                    <option value="TRUCK">Truck</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="vehicleCapInput" class="form-label">Capacity (kg)</label>
-                  <input type="number" id="vehicleCapInput" class="form-input" min="1" step="10" placeholder="800" required>
-                </div>
-              </div>
-              <button type="button" class="btn btn-secondary btn-block" id="btnAddVehicle">+ Add Vehicle</button>
-            </form>
-            <div class="table-scroll-wrapper">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Plate</th>
-                    <th>Type</th>
-                    <th>Capacity</th>
-                  </tr>
+              <button type="button" id="btnAddVehicle" class="w-full py-1.5 bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-xs rounded-xl transition">
+                + Register Vehicle
+              </button>
+            </div>
+            <div class="max-h-40 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-navy-950/80 text-slate-400 sticky top-0">
+                  <tr><th class="p-2">ID</th><th class="p-2">Plate</th><th class="p-2">Type</th><th class="p-2">Capacity</th></tr>
                 </thead>
-                <tbody id="vehicleRosterBody"></tbody>
+                <tbody id="vehicleRosterBody" class="divide-y divide-white/5 text-slate-300"></tbody>
               </table>
             </div>
           </div>
         </section>
 
-        <!-- TAB 4: DBMS ANALYTICS & LOGS -->
-        <section class="tab-pane" id="tabAnalytics">
-          <div class="reports-subnav">
-            <button type="button" class="report-tab active" data-report="repTrips">Trip History</button>
-            <button type="button" class="report-tab" data-report="repDrivers">Driver Stats</button>
-            <button type="button" class="report-tab" data-report="repLocations">Top Stops</button>
-            <button type="button" class="report-tab" data-report="repAudit">Audit Trail</button>
+        <!-- TAB 4: DBMS LOGS & REPORTS -->
+        <section id="tabAnalytics" class="tab-pane space-y-3 hidden">
+          <div class="flex bg-black/40 border border-white/10 rounded-xl p-1 gap-1">
+            <button type="button" data-report="repTrips" class="report-tab active flex-1 py-1 rounded-lg text-xs font-heading font-semibold transition text-slate-300">Trips</button>
+            <button type="button" data-report="repDrivers" class="report-tab flex-1 py-1 rounded-lg text-xs font-heading font-semibold transition text-slate-300">Drivers</button>
+            <button type="button" data-report="repLocations" class="report-tab flex-1 py-1 rounded-lg text-xs font-heading font-semibold transition text-slate-300">Top Stops</button>
+            <button type="button" data-report="repAudit" class="report-tab flex-1 py-1 rounded-lg text-xs font-heading font-semibold transition text-slate-300">Audits</button>
           </div>
 
           <!-- Trip History -->
-          <div class="report-panel active" id="repTrips">
-            <div class="report-title-bar">
-              <h4>Saved Trips (<code>v_trip_summary</code>)</h4>
-              <button class="btn-refresh-icon" id="btnRefreshTrips" title="Refresh">↻</button>
+          <div id="repTrips" class="report-panel active space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Saved Trips (View: <code class="text-cyan-400">v_trip_summary</code>)</span>
+              <button type="button" id="btnRefreshTrips" class="text-slate-400 hover:text-white">↻</button>
             </div>
-            <div class="table-scroll-wrapper large-scroll">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>When</th>
-                    <th>Depot</th>
-                    <th>Driver</th>
-                    <th>Vehicle</th>
-                    <th>Mode</th>
-                    <th>Stops</th>
-                    <th>km</th>
-                    <th>min</th>
-                  </tr>
+            <div class="max-h-80 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-navy-950/90 text-slate-400 sticky top-0">
+                  <tr><th class="p-2">ID</th><th class="p-2">Date</th><th class="p-2">Driver</th><th class="p-2">Stops</th><th class="p-2">km</th><th class="p-2">min</th></tr>
                 </thead>
-                <tbody id="tripHistoryBody"></tbody>
+                <tbody id="tripHistoryBody" class="divide-y divide-white/5 text-slate-300"></tbody>
               </table>
             </div>
           </div>
 
-          <!-- Driver Stats -->
-          <div class="report-panel" id="repDrivers">
-            <div class="report-title-bar">
-              <h4>Driver Workload (<code>GROUP BY + Aggregate</code>)</h4>
-              <button class="btn-refresh-icon" id="btnRefreshDrivers" title="Refresh">↻</button>
+          <!-- Driver Workload -->
+          <div id="repDrivers" class="report-panel space-y-2 hidden">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Driver Performance (<code>GROUP BY</code>)</span>
+              <button type="button" id="btnRefreshDrivers" class="text-slate-400 hover:text-white">↻</button>
             </div>
-            <div class="table-scroll-wrapper">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Driver</th>
-                    <th>Trips</th>
-                    <th>Total Distance</th>
-                    <th>Avg Duration</th>
-                  </tr>
+            <div class="max-h-80 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-navy-950/90 text-slate-400 sticky top-0">
+                  <tr><th class="p-2">Driver</th><th class="p-2">Trips</th><th class="p-2">Total km</th><th class="p-2">Avg min</th></tr>
                 </thead>
-                <tbody id="driverPerfBody"></tbody>
+                <tbody id="driverPerfBody" class="divide-y divide-white/5 text-slate-300"></tbody>
               </table>
             </div>
           </div>
 
-          <!-- Top Stops -->
-          <div class="report-panel" id="repLocations">
-            <div class="report-title-bar">
-              <h4>Most Visited Customer Destinations</h4>
-              <button class="btn-refresh-icon" id="btnRefreshLocations" title="Refresh">↻</button>
+          <!-- Top Visited -->
+          <div id="repLocations" class="report-panel space-y-2 hidden">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Most Visited Customer Destinations</span>
+              <button type="button" id="btnRefreshLocations" class="text-slate-400 hover:text-white">↻</button>
             </div>
-            <div class="table-scroll-wrapper">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Destination</th>
-                    <th>Type</th>
-                    <th>Deliveries Completed</th>
-                  </tr>
+            <div class="max-h-80 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-navy-950/90 text-slate-400 sticky top-0">
+                  <tr><th class="p-2">Destination</th><th class="p-2">Type</th><th class="p-2">Deliveries</th></tr>
                 </thead>
-                <tbody id="topLocationsBody"></tbody>
+                <tbody id="topLocationsBody" class="divide-y divide-white/5 text-slate-300"></tbody>
               </table>
             </div>
           </div>
 
-          <!-- Audit Trail -->
-          <div class="report-panel" id="repAudit">
-            <div class="report-title-bar">
-              <h4>Automatic SQLite Trigger Audit Trail</h4>
-              <button class="btn-refresh-icon" id="btnRefreshAudit" title="Refresh">↻</button>
+          <!-- Audit Log -->
+          <div id="repAudit" class="report-panel space-y-2 hidden">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Automatic Trigger Road Log (<code class="text-emerald-400">road_audit</code>)</span>
+              <button type="button" id="btnRefreshAudit" class="text-slate-400 hover:text-white">↻</button>
             </div>
-            <div class="table-scroll-wrapper">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Timestamp</th>
-                    <th>Road ID</th>
-                    <th>Action</th>
-                    <th>Details</th>
-                  </tr>
+            <div class="max-h-80 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-navy-950/90 text-slate-400 sticky top-0">
+                  <tr><th class="p-2">ID</th><th class="p-2">Time</th><th class="p-2">Action</th><th class="p-2">Details</th></tr>
                 </thead>
-                <tbody id="auditTrailBody"></tbody>
+                <tbody id="auditTrailBody" class="divide-y divide-white/5 text-slate-300"></tbody>
               </table>
             </div>
           </div>
@@ -500,105 +485,156 @@
       </div>
     </aside>
 
-    <!-- Center Interactive Visualizer Stage -->
-    <section class="stage-panel" id="stagePanel">
-      <!-- Floating Map Action Toolbar -->
-      <div class="map-toolbar">
-        <div class="map-tools-left">
-          <button class="map-tool-btn" id="btnToggleSidebar" title="Toggle Sidebar">
-            ☰ <span class="btn-label-inline">Menu</span>
+    <!-- Center Stage Canvas Map -->
+    <section id="stagePanel" class="flex-1 relative bg-gradient-to-br from-navy-900 via-navy-950 to-black overflow-hidden">
+      
+      <!-- Floating Map Toolbar -->
+      <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+        <div class="flex items-center gap-2 pointer-events-auto">
+          <button type="button" id="btnToggleSidebar" class="h-8 px-3 bg-navy-900/90 hover:bg-navy-800 border border-white/10 rounded-lg text-xs font-heading font-semibold text-white shadow-lg backdrop-blur transition flex items-center gap-1.5" title="Toggle Sidebar">
+            ☰ Menu
           </button>
-          <button class="map-tool-btn" id="btnZoomIn" title="Zoom in">+</button>
-          <button class="map-tool-btn" id="btnZoomOut" title="Zoom out">-</button>
-          <button class="map-tool-btn" id="btnCenterNodes" title="Auto fit graph to screen">⊡ Fit Map</button>
-        </div>
-
-        <!-- Live Vehicle Animation Controller -->
-        <div class="map-animation-controls hidden" id="mapAnimControls">
-          <button class="map-tool-btn anim-play-btn" id="btnToggleAnim" title="Pause / Play animation">⏸</button>
-          <div class="anim-scrubber-wrap">
-            <div class="anim-scrubber-fill" id="animScrubberFill"></div>
+          <div class="flex bg-navy-900/90 border border-white/10 rounded-lg overflow-hidden backdrop-blur shadow-lg">
+            <button type="button" id="btnZoomIn" class="w-8 h-8 flex items-center justify-center text-sm font-bold text-white hover:bg-white/10 transition" title="Zoom in">+</button>
+            <div class="w-[1px] bg-white/10"></div>
+            <button type="button" id="btnZoomOut" class="w-8 h-8 flex items-center justify-center text-sm font-bold text-white hover:bg-white/10 transition" title="Zoom out">-</button>
           </div>
-          <span class="anim-speed-label">Speed:</span>
-          <button class="map-tool-btn speed-btn active" data-speed="1">1x</button>
-          <button class="map-tool-btn speed-btn" data-speed="2">2x</button>
-          <button class="map-tool-btn speed-btn" data-speed="4">4x</button>
+          <button type="button" id="btnCenterNodes" class="h-8 px-3 bg-navy-900/90 hover:bg-navy-800 border border-white/10 rounded-lg text-xs font-heading font-semibold text-white shadow-lg backdrop-blur transition" title="Fit whole city into screen">
+            ⊡ Fit Map
+          </button>
         </div>
 
-        <!-- Map Legend -->
-        <div class="map-legend">
-          <div class="legend-item"><span class="legend-dot dot-warehouse"></span> Depot</div>
-          <div class="legend-item"><span class="legend-dot dot-customer"></span> Customer</div>
-          <div class="legend-item"><span class="legend-dot dot-landmark"></span> Landmark</div>
-          <div class="legend-item"><span class="legend-line line-active"></span> Open Road</div>
-          <div class="legend-item"><span class="legend-line line-closed"></span> Closed Road</div>
-          <div class="legend-item"><span class="legend-line line-route"></span> Active Route</div>
+        <!-- Animated Vehicle HUD Controller -->
+        <div id="mapAnimControls" class="hidden pointer-events-auto flex items-center gap-2.5 bg-navy-900/90 border border-white/10 rounded-full px-3.5 py-1 backdrop-blur-xl shadow-lg">
+          <button type="button" id="btnToggleAnim" class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 flex items-center justify-center text-xs font-bold transition">⏸</button>
+          <div class="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div id="animScrubberFill" class="w-0 h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-100"></div>
+          </div>
+          <span class="text-[10px] text-slate-400 font-medium">Speed:</span>
+          <div class="flex gap-1 text-[10px]">
+            <button type="button" data-speed="1" class="speed-btn active px-1.5 py-0.5 rounded bg-cyan-500 text-black font-bold">1x</button>
+            <button type="button" data-speed="2" class="speed-btn px-1.5 py-0.5 rounded text-slate-300 hover:text-white">2x</button>
+            <button type="button" data-speed="4" class="speed-btn px-1.5 py-0.5 rounded text-slate-300 hover:text-white">4x</button>
+          </div>
+        </div>
+
+        <!-- Legend Overlay -->
+        <div class="hidden md:flex items-center gap-3 bg-navy-900/90 border border-white/10 rounded-full px-4 py-1.5 backdrop-blur-xl shadow-lg text-xs text-slate-300 pointer-events-auto">
+          <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]"></span> Depot</div>
+          <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span> Customer</div>
+          <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_6px_#8b5cf6]"></span> Landmark</div>
+          <div class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-cyan-400"></span> Open Road</div>
+          <div class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-rose-500 border-t border-dashed border-white"></span> Closed</div>
         </div>
       </div>
 
       <!-- HTML5 Canvas Viewport -->
-      <div class="canvas-viewport" id="canvasViewport">
+      <div id="canvasViewport" class="w-full h-full cursor-grab active:cursor-grabbing relative">
         <canvas id="networkCanvas"></canvas>
 
-        <!-- Floating Node Context Popup -->
-        <div class="node-context-popup hidden" id="nodeContextPopup">
-          <div class="popup-header">
-            <span class="popup-icon" id="popupIcon">🏢</span>
-            <div class="popup-title-wrap">
-              <div class="popup-name" id="popupName">Warehouse</div>
-              <div class="popup-type" id="popupType">WAREHOUSE</div>
+        <!-- Floating On-Map Node Action Popup -->
+        <div id="nodeContextPopup" class="hidden absolute z-50 w-64 bg-navy-900/95 border border-cyan-400/40 rounded-2xl p-3 shadow-2xl backdrop-blur-xl animate-fadeIn pointer-events-auto">
+          <div class="flex items-center gap-2 pb-2 mb-2 border-b border-white/10">
+            <span id="popupIcon" class="text-xl">🏢</span>
+            <div class="flex-1 min-w-0">
+              <div id="popupName" class="font-heading font-bold text-sm text-white truncate">Warehouse</div>
+              <div id="popupType" class="text-[10px] font-mono font-semibold text-cyan-400">WAREHOUSE</div>
             </div>
-            <button class="popup-close" id="btnClosePopup">&times;</button>
+            <button type="button" id="btnClosePopup" class="text-slate-400 hover:text-white text-base leading-none">&times;</button>
           </div>
-          <div class="popup-connections" id="popupConnections">
-            <!-- Road connections -->
-          </div>
-          <div class="popup-actions">
-            <button type="button" class="btn btn-emerald btn-sm" id="btnPopupSetStart">🚩 Set as Start</button>
-            <button type="button" class="btn btn-primary btn-sm" id="btnPopupSetEnd">🏁 Set as End</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnPopupAddStop">➕ Add Stop</button>
+          <div id="popupConnections" class="text-xs text-slate-300 mb-2.5 max-h-20 overflow-y-auto custom-scrollbar leading-relaxed"></div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" id="btnPopupSetStart" class="py-1 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-heading font-semibold transition">🚩 Start Here</button>
+            <button type="button" id="btnPopupSetEnd" class="py-1 px-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-heading font-semibold transition">🏁 End Here</button>
+            <button type="button" id="btnPopupAddStop" class="col-span-2 py-1 px-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-xs font-heading font-semibold transition">➕ Add as Delivery Stop</button>
           </div>
         </div>
       </div>
 
-      <!-- Live Floating Status HUD at bottom of map -->
-      <div class="map-live-hud" id="mapLiveHud">
-        <div class="hud-status-badge">
-          <span class="status-pulse"></span>
+      <!-- Live Floating Bottom Status HUD -->
+      <div class="absolute bottom-4 left-4 z-20 pointer-events-none">
+        <div class="inline-flex items-center gap-2 bg-navy-900/90 border border-white/10 rounded-full px-3.5 py-1.5 text-xs text-slate-200 backdrop-blur-xl shadow-lg">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse"></span>
           <span id="hudStatusText">Ready: Click any node to plan a route</span>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- Docs & Architecture Modal -->
-  <div class="modal-backdrop hidden" id="docsModal">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3 class="modal-title">System Architecture: DSA + DBMS Combined</h3>
-        <button class="modal-close" id="btnCloseDocs">&times;</button>
+  <!-- Oracle Database Configuration Modal -->
+  <div id="oracleModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn">
+      <div class="p-4 border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🏛️</span>
+          <h3 class="font-heading font-bold text-base text-white">Oracle Database Configuration</h3>
+        </div>
+        <button type="button" id="btnCloseOracleModal" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
       </div>
-      <div class="modal-body">
-        <h4>1. DSA Foundation (Graph & Dijkstra)</h4>
-        <p>The city road network is represented in memory as an adjacency list graph <code>List&lt;List&lt;Edge&gt;&gt;</code>. Dijkstra's shortest path algorithm runs in <code>O((V + E) log V)</code> using a binary min-heap (<code>PriorityQueue</code>). Multi-stop delivery combines a greedy nearest-neighbor heuristic with Dijkstra legs.</p>
+      <div class="p-5 space-y-3.5 text-xs text-slate-300">
+        <div class="p-3 bg-navy-950 border border-white/10 rounded-xl space-y-1">
+          <div class="font-semibold text-white flex items-center justify-between">
+            <span>Current Database Status:</span>
+            <span id="modalDbEngineBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">SQLITE (ACTIVE)</span>
+          </div>
+          <div id="modalDbDetails" class="text-slate-400 font-mono text-[11px]">SQLite (delivery.db)</div>
+        </div>
 
-        <h4>2. Relational DBMS Foundation (SQLite)</h4>
-        <p>The system adheres to 3NF relational normalization:</p>
-        <ul>
+        <p class="leading-relaxed">RouteFlow includes the official <strong>Oracle JDBC Driver (<code class="text-cyan-400">ojdbc11.jar</code>)</strong> and automatically connects to your Oracle Database instance when configured.</p>
+
+        <div>
+          <label class="block font-semibold text-white mb-1.5">How to connect to your Oracle Database:</label>
+          <p class="text-slate-400 mb-2">Edit <code class="text-cyan-400 bg-black/40 px-1 py-0.5 rounded">db.properties</code> in your project root with your Oracle credentials:</p>
+          <pre class="p-3 bg-black/60 border border-white/10 rounded-xl text-[11px] font-mono text-cyan-300 overflow-x-auto">db.mode=AUTO
+oracle.host=localhost
+oracle.port=1521
+oracle.service=FREEPDB1   # or XEPDB1 / XE
+oracle.user=SYSTEM
+oracle.password=YourPassword</pre>
+        </div>
+
+        <div class="p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-xl text-cyan-200">
+          <strong>Tip:</strong> If Oracle Database is not installed or temporarily offline, RouteFlow <strong>seamlessly uses SQLite</strong> so your project never crashes during demos!
+        </div>
+      </div>
+      <div class="p-4 border-t border-white/10 flex justify-end">
+        <button type="button" id="btnDismissOracleModal" class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-xs rounded-xl transition">
+          Got It
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docs & Architecture Modal -->
+  <div id="docsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn">
+      <div class="p-4 border-b border-white/10 flex items-center justify-between">
+        <h3 class="font-heading font-bold text-base text-white">System Architecture: DSA + DBMS Combined</h3>
+        <button type="button" id="btnCloseDocs" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+      </div>
+      <div class="p-5 space-y-3 text-xs text-slate-300 max-h-[70vh] overflow-y-auto custom-scrollbar leading-relaxed">
+        <h4 class="font-heading font-bold text-cyan-400 text-sm">1. DSA Core (Graph & Dijkstra Algorithm)</h4>
+        <p>The city map is represented in memory as an adjacency list <code>List&lt;List&lt;Edge&gt;&gt;</code>. Dijkstra's shortest path runs in $O((V+E)\log V)$ using a binary min-heap (<code>PriorityQueue</code>). Multi-stop delivery plans optimal TSP customer visits using greedy nearest-neighbor with Dijkstra legs.</p>
+
+        <h4 class="font-heading font-bold text-cyan-400 text-sm">2. Dual Relational DBMS (Oracle + SQLite)</h4>
+        <p>The system adheres to 3NF relational database normalization:</p>
+        <ul class="list-disc pl-4 space-y-1 text-slate-300">
           <li><strong>Tables:</strong> <code>locations</code>, <code>roads</code>, <code>drivers</code>, <code>vehicles</code>, <code>delivery_trips</code>, <code>trip_stops</code>, <code>road_audit</code></li>
-          <li><strong>Triggers:</strong> <code>trg_roads_insert</code> and <code>trg_roads_update</code> automatically record road changes and closures into <code>road_audit</code>.</li>
-          <li><strong>Views:</strong> <code>v_active_roads</code> and <code>v_trip_summary</code> provide high-level abstractions for route queries and reporting.</li>
-          <li><strong>Transactions:</strong> <code>saveTrip</code> wraps trip insertion and all associated stops into a single atomic transaction.</li>
+          <li><strong>Automated Triggers:</strong> <code>trg_roads_insert</code> and <code>trg_roads_update</code> automatically track road changes and closures.</li>
+          <li><strong>Views:</strong> <code>v_active_roads</code> and <code>v_trip_summary</code> provide high-level reporting.</li>
+          <li><strong>Atomic Transactions:</strong> Saves trip and all its ordered stops inside an atomic transaction with automatic rollback on failure.</li>
         </ul>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="btnDismissDocs">Close</button>
+      <div class="p-4 border-t border-white/10 flex justify-end">
+        <button type="button" id="btnDismissDocs" class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-xs rounded-xl transition">
+          Close
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Toast Notification Container -->
-  <div class="toast-container" id="toastContainer"></div>
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script src="app.js"></script>
 </body>

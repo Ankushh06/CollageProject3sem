@@ -60,6 +60,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   await fetchNetwork();
   await loadFleetSelectors();
   await refreshActiveReport();
+  await fetchDatabaseInfo();
 
   // Set default sensible selections
   if (state.network.locations.length >= 2) {
@@ -1239,15 +1240,71 @@ function initEventListeners() {
     }
   });
 
-  document.getElementById('btnOpenDocs').addEventListener('click', () => {
-    document.getElementById('docsModal').classList.remove('hidden');
+  // Brand Logo Click: Auto-fit Map
+  document.getElementById('btnLogo')?.addEventListener('click', autoFitGraph);
+
+  // Oracle Database Modal
+  const oracleModal = document.getElementById('oracleModal');
+  document.getElementById('btnDbConfig')?.addEventListener('click', () => {
+    oracleModal?.classList.remove('hidden');
+    fetchDatabaseInfo();
   });
-  document.getElementById('btnCloseDocs').addEventListener('click', () => {
-    document.getElementById('docsModal').classList.add('hidden');
+  document.getElementById('btnCloseOracleModal')?.addEventListener('click', () => {
+    oracleModal?.classList.add('hidden');
   });
-  document.getElementById('btnDismissDocs').addEventListener('click', () => {
-    document.getElementById('docsModal').classList.add('hidden');
+  document.getElementById('btnDismissOracleModal')?.addEventListener('click', () => {
+    oracleModal?.classList.add('hidden');
   });
+
+  // System Architecture & Docs Modal
+  document.getElementById('btnOpenDocs')?.addEventListener('click', () => {
+    document.getElementById('docsModal')?.classList.remove('hidden');
+  });
+  document.getElementById('btnCloseDocs')?.addEventListener('click', () => {
+    document.getElementById('docsModal')?.classList.add('hidden');
+  });
+  document.getElementById('btnDismissDocs')?.addEventListener('click', () => {
+    document.getElementById('docsModal')?.classList.add('hidden');
+  });
+}
+
+// ----------------------------------------------------------------------------
+//  DATABASE ENGINE STATUS (Oracle / SQLite)
+// ----------------------------------------------------------------------------
+async function fetchDatabaseInfo() {
+  const info = await apiGet('/api/db/info');
+  if (!info) return;
+
+  const engine = (info.engine || 'SQLITE').toUpperCase();
+  const isOracle = engine === 'ORACLE';
+
+  const topLabel = document.getElementById('dbEngineLabel');
+  if (topLabel) {
+    topLabel.textContent = isOracle ? 'Oracle DB' : 'SQLite DB';
+  }
+
+  const topDot = document.getElementById('dbEngineDot');
+  if (topDot) {
+    topDot.className = isOracle
+      ? 'w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_#f43f5e] animate-pulse'
+      : 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse';
+  }
+
+  const badge = document.getElementById('modalDbEngineBadge');
+  if (badge) {
+    if (isOracle) {
+      badge.textContent = 'ORACLE (ACTIVE)';
+      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+    } else {
+      badge.textContent = 'SQLITE (ACTIVE)';
+      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+    }
+  }
+
+  const details = document.getElementById('modalDbDetails');
+  if (details) {
+    details.textContent = info.details || (isOracle ? 'Oracle Database (ojdbc11)' : 'SQLite (delivery.db)');
+  }
 }
 
 async function switchOptimizationMode(mode) {

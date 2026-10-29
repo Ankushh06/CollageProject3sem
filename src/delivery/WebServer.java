@@ -54,6 +54,7 @@ public class WebServer {
         server.createContext("/api/reports/top-locations", this::handleReportTopLocations);
         server.createContext("/api/reports/audit", this::handleReportAudit);
         server.createContext("/api/sample-data", this::handleSampleData);
+        server.createContext("/api/db/info", this::handleDbInfo);
 
         // Static Files Context
         server.createContext("/", this::handleStatic);
@@ -112,6 +113,8 @@ public class WebServer {
         resp.put("locations", net.getLocationsJsonList());
         resp.put("roads", db.getAllRoadsList());
         resp.put("closedCount", db.closedRoadCount());
+        resp.put("dbEngine", db.getActiveEngine());
+        resp.put("dbDetails", db.getEngineDetails());
 
         sendJsonResponse(exchange, 200, resp);
     }
@@ -456,6 +459,10 @@ public class WebServer {
         }
         SampleDataLoader.loadSampleData(db, net);
         sendJsonResponse(exchange, 200, Map.of("success", true, "message", "Sample city reloaded successfully"));
+    }
+
+    private void handleDbInfo(HttpExchange exchange) throws IOException {
+        sendJsonResponse(exchange, 200, db.getEngineInfoMap());
     }
 
     // ---- Helpers -------------------------------------------------------------
