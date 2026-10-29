@@ -132,11 +132,13 @@ function setupCanvasDimensions() {
 async function apiGet(endpoint) {
   try {
     const res = await fetch(endpoint);
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) {
+      console.warn('API GET non-200 (' + endpoint + '):', res.status);
+      return null;
+    }
     return await res.json();
   } catch (err) {
-    console.error('GET error (' + endpoint + '):', err);
-    showToast(err.message || 'Network error', 'error');
+    console.warn('API GET fallback (' + endpoint + '):', err.message);
     return null;
   }
 }
@@ -148,12 +150,13 @@ async function apiPost(endpoint, body) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Server error');
-    return data;
+    if (!res.ok) {
+      console.warn('API POST non-200 (' + endpoint + '):', res.status);
+      return null;
+    }
+    return await res.json();
   } catch (err) {
-    console.error('POST error (' + endpoint + '):', err);
-    showToast(err.message || 'Request failed', 'error');
+    console.warn('API POST fallback (' + endpoint + '):', err.message);
     return null;
   }
 }

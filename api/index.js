@@ -15,13 +15,21 @@ module.exports = (req, res) => {
     return res.status(200).end();
   }
 
-  // Parse path without query string
-  const url = req.url || '';
-  const pathname = url.split('?')[0].replace(/\/+$/, '');
+  // Extract route path: e.g. 'network', 'route', 'roads/toggle', 'db/info'
+  let endpoint = (req.query && req.query.path) ? req.query.path : '';
+  if (!endpoint) {
+    const match = (req.url || '').match(/[?&]path=([^&]+)/);
+    if (match) endpoint = decodeURIComponent(match[1]);
+  }
+  if (!endpoint) {
+    endpoint = (req.url || '').split('?')[0].replace(/^\/api\/?/, '');
+  }
+  endpoint = endpoint.replace(/\/+$/, '').toLowerCase();
+
   const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) || {};
 
   // 1. /api/network
-  if (pathname === '/api/network') {
+  if (endpoint === 'network' || endpoint === '') {
     const closedCount = state.roads.filter(r => !r.isActive).length;
     return res.status(200).json({
       criterion: state.criterion,
@@ -35,7 +43,7 @@ module.exports = (req, res) => {
   }
 
   // 2. /api/criterion
-  if (pathname === '/api/criterion') {
+  if (endpoint === 'criterion') {
     if (req.method === 'POST') {
       state.criterion = (body.criterion === 'TIME') ? 'TIME' : 'DISTANCE';
     }
@@ -46,7 +54,7 @@ module.exports = (req, res) => {
   }
 
   // 3. /api/route
-  if (pathname === '/api/route') {
+  if (endpoint === 'route') {
     const { source, destination, criterion } = body;
     if (!source || !destination) {
       return res.status(400).json({ error: 'Source and destination required' });
@@ -60,7 +68,7 @@ module.exports = (req, res) => {
   }
 
   // 4. /api/plan
-  if (pathname === '/api/plan') {
+  if (endpoint === 'plan') {
     const { depot = 'Warehouse', stops = [], returnToDepot = true, criterion } = body;
     const crit = criterion || state.criterion || 'DISTANCE';
     const plan = planTSP(depot, stops, returnToDepot, crit);
@@ -71,7 +79,7 @@ module.exports = (req, res) => {
   }
 
   // 5. /api/locations
-  if (pathname === '/api/locations') {
+  if (endpoint === 'locations') {
     if (req.method === 'POST') {
       const { name, type = 'CUSTOMER' } = body;
       if (!name) return res.status(400).json({ error: 'Name is required' });
@@ -92,7 +100,7 @@ module.exports = (req, res) => {
   }
 
   // 6. /api/locations/coords
-  if (pathname === '/api/locations/coords') {
+  if (endpoint === 'locations/coords') {
     if (req.method === 'POST') {
       const { id, x, y } = body;
       const loc = state.locations.find(l => l.id === id);
@@ -107,7 +115,7 @@ module.exports = (req, res) => {
   }
 
   // 7. /api/roads
-  if (pathname === '/api/roads') {
+  if (endpoint === 'roads') {
     if (req.method === 'POST') {
       const { from, to, distance, time } = body;
       if (!from || !to || !distance || !time || from.toLowerCase() === to.toLowerCase()) {
@@ -149,7 +157,7 @@ module.exports = (req, res) => {
   }
 
   // 8. /api/roads/toggle
-  if (pathname === '/api/roads/toggle') {
+  if (endpoint === 'roads/toggle') {
     const { from, to, active } = body;
     const road = state.roads.find(r => 
       (r.locA.toLowerCase() === from?.toLowerCase() && r.locB.toLowerCase() === to?.toLowerCase()) ||
@@ -173,7 +181,7 @@ module.exports = (req, res) => {
   }
 
   // 9. /api/trips
-  if (pathname === '/api/trips') {
+  if (endpoint === 'trips') {
     if (req.method === 'POST') {
       const { depot, driver, vehicle, criterion = 'DISTANCE', km, minutes, fullRoute = [], routeText = '' } = body;
       const newTrip = {
@@ -195,7 +203,7 @@ module.exports = (req, res) => {
   }
 
   // 10. /api/drivers
-  if (pathname === '/api/drivers') {
+  if (endpoint === 'drivers') {
     if (req.method === 'POST') {
       const { name, phone } = body;
       if (!name || !phone) return res.status(400).json({ error: 'Name and phone required' });
@@ -211,7 +219,7 @@ module.exports = (req, res) => {
   }
 
   // 11. /api/vehicles
-  if (pathname === '/api/vehicles') {
+  if (endpoint === 'vehicles') {
     if (req.method === 'POST') {
       const { regNo, type = 'VAN', capacity = 500 } = body;
       if (!regNo) return res.status(400).json({ error: 'Registration number required' });
@@ -228,7 +236,7 @@ module.exports = (req, res) => {
   }
 
   // 12. /api/reports/drivers
-  if (pathname === '/api/reports/drivers') {
+  if (endpoint === 'reports/drivers') {
     const report = state.drivers.map(d => {
       const driverTrips = state.trips.filter(t => t.driver === d.name);
       const totalKm = driverTrips.reduce((acc, t) => acc + (t.km || 0), 0);
@@ -245,7 +253,7 @@ module.exports = (req, res) => {
   }
 
   // 13. /api/reports/top-locations
-  if (pathname === '/api/reports/top-locations') {
+  if (endpoint === 'reports/top-locations') {
     const counts = {};
     state.trips.forEach(t => {
       (t.routeText || '').split('->').forEach(seg => {
@@ -264,18 +272,18 @@ module.exports = (req, res) => {
   }
 
   // 14. /api/reports/audit
-  if (pathname === '/api/reports/audit') {
+  if (endpoint === 'reports/audit') {
     return res.status(200).json(state.audit);
   }
 
   // 15. /api/sample-data
-  if (pathname === '/api/sample-data') {
+  if (endpoint === 'sample-data') {
     resetSample();
     return res.status(200).json({ success: true, message: 'Sample city reloaded successfully' });
   }
 
   // 16. /api/db/info
-  if (pathname === '/api/db/info') {
+  if (endpoint === 'db/info') {
     const isOracleEnv = Boolean(process.env.ORACLE_HOST || process.env.ORACLE_SERVICE);
     return res.status(200).json({
       engine: isOracleEnv ? 'ORACLE' : 'ORACLE / VERCEL',
@@ -288,6 +296,5 @@ module.exports = (req, res) => {
     });
   }
 
-  // Default fallback for unknown API
-  return res.status(404).json({ error: 'API endpoint not found', path: pathname });
+  return res.status(404).json({ error: 'API endpoint not found', endpoint });
 };
