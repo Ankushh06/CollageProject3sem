@@ -888,9 +888,9 @@ function findRoadAt(wx, wy) {
     const a = locs.find(l => l.name === r.locA);
     const b = locs.find(l => l.name === r.locB);
     if (!a || !b) continue;
-    // Point-to-segment distance
+    // Point-to-segment distance with generous click tolerance
     const dist = distToSegment(wx, wy, a.x, a.y, b.x, b.y);
-    if (dist <= 10) return r;
+    if (dist <= 14) return r;
   }
   return null;
 }
@@ -903,8 +903,16 @@ function distToSegment(px, py, x1, y1, x2, y2) {
   return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
 }
 
+let pointerDownScreen = null;
+let isActuallyDraggingNode = false;
+let isActuallyPanning = false;
+
 function onMouseDown(e) {
   if (e.button !== 0) return;
+  pointerDownScreen = { x: e.clientX, y: e.clientY };
+  isActuallyDraggingNode = false;
+  isActuallyPanning = false;
+
   const pos = screenToWorld(e.clientX, e.clientY);
   const clickedNode = findNodeAt(pos.x, pos.y);
 
@@ -920,14 +928,25 @@ function onMouseDown(e) {
 function onMouseMove(e) {
   const pos = screenToWorld(e.clientX, e.clientY);
 
-  if (state.viewport.draggedNode) {
+  if (pointerDownScreen) {
+    const dist = Math.hypot(e.clientX - pointerDownScreen.x, e.clientY - pointerDownScreen.y);
+    if (dist > 4) {
+      if (state.viewport.draggedNode) {
+        isActuallyDraggingNode = true;
+      } else if (state.viewport.isPanning) {
+        isActuallyPanning = true;
+      }
+    }
+  }
+
+  if (state.viewport.draggedNode && isActuallyDraggingNode) {
     state.viewport.draggedNode.x = Math.round(pos.x + state.viewport.dragOffset.x);
     state.viewport.draggedNode.y = Math.round(pos.y + state.viewport.dragOffset.y);
     requestRender();
     return;
   }
 
-  if (state.viewport.isPanning) {
+  if (state.viewport.isPanning && isActuallyPanning) {
     state.viewport.x = e.clientX - state.viewport.panStart.x;
     state.viewport.y = e.clientY - state.viewport.panStart.y;
     requestRender();
@@ -947,34 +966,42 @@ function onMouseMove(e) {
     state.viewport.hoveredRoad = hoveredRoad;
     needRender = true;
   }
-  canvasViewport.style.cursor = hoveredNode ? 'pointer' : hoveredRoad ? 'crosshair' : 'grab';
+  canvasViewport.style.cursor = hoveredNode ? 'pointer' : hoveredRoad ? 'pointer' : 'grab';
   if (needRender) requestRender();
 }
 
 async function onMouseUp(e) {
-  if (state.viewport.draggedNode) {
-    const node = state.viewport.draggedNode;
-    state.viewport.draggedNode = null;
-    await apiPost('/api/locations/coords', { id: node.id, x: node.x, y: node.y });
+  const wasDragging = isActuallyDraggingNode;
+  const wasPanning = isActuallyPanning;
+  const dragged = state.viewport.draggedNode;
+
+  pointerDownScreen = null;
+  state.viewport.draggedNode = null;
+  state.viewport.isPanning = false;
+  isActuallyDraggingNode = false;
+  isActuallyPanning = false;
+
+  if (dragged && wasDragging) {
+    await apiPost('/api/locations/coords', { id: dragged.id, x: dragged.x, y: dragged.y });
     return;
   }
+
+  if (wasPanning) return;
 
   const pos = screenToWorld(e.clientX, e.clientY);
   const clickedNode = findNodeAt(pos.x, pos.y);
 
-  if (clickedNode && !state.viewport.isPanning) {
+  if (clickedNode) {
     showNodePopup(clickedNode);
     return;
   }
 
   // Check if user clicked a road to toggle its open/closed status!
   const clickedRoad = findRoadAt(pos.x, pos.y);
-  if (clickedRoad && !state.viewport.isPanning) {
+  if (clickedRoad) {
     await toggleRoadState(clickedRoad.locA, clickedRoad.locB, !clickedRoad.isActive);
     return;
   }
-
-  state.viewport.isPanning = false;
 }
 
 function onWheel(e) {
@@ -1089,10 +1116,17 @@ function initEventListeners() {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
       tab.classList.add('active');
       const target = tab.getAttribute('data-tab');
-      document.getElementById(target).classList.add('active');
+      const targetPane = document.getElementById(target);
+      if (targetPane) {
+        targetPane.classList.add('active');
+        targetPane.style.display = 'block';
+      }
       state.activeTab = target;
       if (target === 'tabAnalytics') refreshActiveReport();
     });
@@ -1146,6 +1180,9 @@ function initEventListeners() {
     const time = parseFloat(document.getElementById('roadTimeInput').value);
     if (!from || !to || isNaN(distance) || isNaN(time) || distance <= 0 || time <= 0) {
       return showToast('Provide valid distance and time', 'info');
+    }
+    if (from.toLowerCase() === to.toLowerCase()) {
+      return showToast('Road must connect two different locations', 'info');
     }
     const res = await apiPost('/api/roads', { from, to, distance, time });
     if (res && res.success) {
@@ -1212,10 +1249,17 @@ function initEventListeners() {
   document.querySelectorAll('.report-tab').forEach(rt => {
     rt.addEventListener('click', () => {
       document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.report-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.report-panel').forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
       rt.classList.add('active');
       const target = rt.getAttribute('data-report');
-      document.getElementById(target).classList.add('active');
+      const targetPanel = document.getElementById(target);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+        targetPanel.style.display = 'block';
+      }
       state.activeReport = target;
       refreshActiveReport();
     });

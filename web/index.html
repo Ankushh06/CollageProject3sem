@@ -299,7 +299,7 @@
         </section>
 
         <!-- TAB 2: ROAD NETWORK & CLOSURES -->
-        <section id="tabNetwork" class="tab-pane space-y-4 hidden">
+        <section id="tabNetwork" class="tab-pane space-y-4">
           <!-- Road Closure Simulator Card -->
           <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2">
@@ -354,7 +354,7 @@
         </section>
 
         <!-- TAB 3: FLEET & DRIVERS -->
-        <section id="tabFleet" class="tab-pane space-y-4 hidden">
+        <section id="tabFleet" class="tab-pane space-y-4">
           <!-- Drivers -->
           <div class="bg-navy-850 border border-white/10 rounded-2xl p-4 space-y-3">
             <div class="flex items-center gap-2">
@@ -410,7 +410,7 @@
         </section>
 
         <!-- TAB 4: DBMS LOGS & REPORTS -->
-        <section id="tabAnalytics" class="tab-pane space-y-3 hidden">
+        <section id="tabAnalytics" class="tab-pane space-y-3">
           <div class="flex bg-black/40 border border-white/10 rounded-xl p-1 gap-1">
             <button type="button" data-report="repTrips" class="report-tab active flex-1 py-1 rounded-lg text-xs font-heading font-semibold transition text-slate-300">Trips</button>
             <button type="button" data-report="repDrivers" class="report-tab flex-1 py-1 rounded-lg text-xs font-heading font-semibold transition text-slate-300">Drivers</button>
@@ -435,7 +435,7 @@
           </div>
 
           <!-- Driver Workload -->
-          <div id="repDrivers" class="report-panel space-y-2 hidden">
+          <div id="repDrivers" class="report-panel space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-400">
               <span>Driver Performance (<code>GROUP BY</code>)</span>
               <button type="button" id="btnRefreshDrivers" class="text-slate-400 hover:text-white">↻</button>
@@ -451,7 +451,7 @@
           </div>
 
           <!-- Top Visited -->
-          <div id="repLocations" class="report-panel space-y-2 hidden">
+          <div id="repLocations" class="report-panel space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-400">
               <span>Most Visited Customer Destinations</span>
               <button type="button" id="btnRefreshLocations" class="text-slate-400 hover:text-white">↻</button>
@@ -467,7 +467,7 @@
           </div>
 
           <!-- Audit Log -->
-          <div id="repAudit" class="report-panel space-y-2 hidden">
+          <div id="repAudit" class="report-panel space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-400">
               <span>Automatic Trigger Road Log (<code class="text-emerald-400">road_audit</code>)</span>
               <button type="button" id="btnRefreshAudit" class="text-slate-400 hover:text-white">↻</button>

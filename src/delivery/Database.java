@@ -360,12 +360,11 @@ public class Database implements AutoCloseable {
         int ib = locationId(locB);
         if (ia < 0 || ib < 0) return false;
 
-        String sql = "UPDATE roads SET is_active = ? WHERE loc_a = ? AND loc_b = ? AND is_active <> ?";
+        String sql = "UPDATE roads SET is_active = ? WHERE loc_a = ? AND loc_b = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, active ? 1 : 0);
             ps.setInt(2, Math.min(ia, ib));
             ps.setInt(3, Math.max(ia, ib));
-            ps.setInt(4, active ? 1 : 0);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("  [DB error] setRoadActive: " + e.getMessage());

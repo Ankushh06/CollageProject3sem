@@ -49,6 +49,22 @@
   color: #c084fc !important;
 }
 
+/* Tab Pane Visibility */
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block !important;
+}
+
+/* Report Panel Visibility */
+.report-panel {
+  display: none;
+}
+.report-panel.active {
+  display: block !important;
+}
+
 /* Location Chips Selection */
 .loc-chip {
   padding: 4px 10px;
@@ -147,6 +163,16 @@
 .road-closure-item.is-closed {
   border-color: rgba(244, 63, 94, 0.4);
   background: rgba(244, 63, 94, 0.08);
+}
+
+.road-closure-name {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.road-closure-stats {
+  font-size: 0.68rem;
+  color: #94a3b8;
 }
 
 .btn-toggle-road {
