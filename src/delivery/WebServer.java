@@ -76,11 +76,18 @@ public class WebServer {
     private void handleStatic(HttpExchange exchange) throws IOException {
         String pathStr = exchange.getRequestURI().getPath();
         if (pathStr.equals("/") || pathStr.isEmpty()) pathStr = "/index.html";
+        if (pathStr.startsWith("/web/")) pathStr = pathStr.substring(4);
 
-        Path file = webRoot.resolve(pathStr.substring(1)).normalize();
-        if (!file.startsWith(webRoot) || !Files.exists(file) || Files.isDirectory(file)) {
-            sendResponse(exchange, 404, "text/plain", "404 Not Found");
-            return;
+        String relPath = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
+        Path file = webRoot.resolve(relPath).normalize();
+        if (!Files.exists(file) || Files.isDirectory(file)) {
+            Path rootFile = Paths.get(".").resolve(relPath).normalize();
+            if (Files.exists(rootFile) && !Files.isDirectory(rootFile)) {
+                file = rootFile;
+            } else {
+                sendResponse(exchange, 404, "text/plain", "404 Not Found");
+                return;
+            }
         }
 
         String mime = "application/octet-stream";

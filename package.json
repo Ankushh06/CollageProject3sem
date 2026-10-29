@@ -1,9 +1,10 @@
 {
   "name": "routeflow",
   "version": "1.0.0",
-  "description": "RouteFlow - Intelligent Delivery Route Optimization (DSA Dijkstra + Relational DBMS)",
-  "main": "web/index.html",
+  "description": "RouteFlow - Intelligent Delivery Route Optimization System (DSA Dijkstra + Relational DBMS)",
+  "main": "index.html",
   "scripts": {
+    "build": "echo 'RouteFlow build ready'",
     "start": "java -cp \"bin;sqlite-jdbc.jar;ojdbc11.jar\" delivery.Main --server"
   },
   "keywords": [

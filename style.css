@@ -1,0 +1,256 @@
+/* ============================================================================
+   RouteFlow - Tailwind CSS v3 Companion Stylesheet
+   Micro-animations, Custom Scrollbars, and Canvas Map Enhancements
+   ============================================================================ */
+
+/* Custom Thin Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Mode pill active gradient */
+.mode-pill.active {
+  background: linear-gradient(135deg, #06b6d4, #0284c7) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.45);
+}
+
+/* Nav Tab Active */
+.nav-tab.active {
+  color: #06b6d4 !important;
+  background-color: rgba(6, 182, 212, 0.14) !important;
+  box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.35);
+}
+
+/* Segmented Control Active */
+.segment-btn.active {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* Report Tab Active */
+.report-tab.active {
+  background-color: rgba(139, 92, 246, 0.2) !important;
+  color: #c084fc !important;
+}
+
+/* Tab Pane Visibility */
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block !important;
+}
+
+/* Report Panel Visibility */
+.report-panel {
+  display: none;
+}
+.report-panel.active {
+  display: block !important;
+}
+
+/* Location Chips Selection */
+.loc-chip {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.loc-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.loc-chip.selected-source {
+  background: rgba(16, 185, 129, 0.25) !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+.loc-chip.selected-dest {
+  background: rgba(6, 182, 212, 0.25) !important;
+  border-color: #06b6d4 !important;
+  color: #7dd3fc !important;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+}
+
+/* Stop Toggle Cards */
+.stop-toggle-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #cbd5e1;
+}
+.stop-toggle-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.stop-toggle-card.checked {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: #06b6d4;
+  color: #ffffff;
+}
+
+/* Turn-by-Turn Timeline Step */
+.timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+}
+.step-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-marker.start { background: #10b981; color: #000; }
+.step-marker.leg { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+.step-marker.end { background: #06b6d4; color: #000; }
+
+/* Road Closure Item */
+.road-closure-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.road-closure-item.is-closed {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.road-closure-name {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.road-closure-stats {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.btn-toggle-road {
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-toggle-road.btn-open {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.btn-toggle-road.btn-open:hover {
+  background: rgba(244, 63, 94, 0.2);
+  color: #f43f5e;
+  border-color: #f43f5e;
+}
+.btn-toggle-road.btn-closed {
+  background: rgba(244, 63, 94, 0.2);
+  color: #f43f5e;
+  border: 1px solid #f43f5e;
+}
+.btn-toggle-road.btn-closed:hover {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: #34d399;
+}
+
+/* Sidebar Collapse Animation */
+.sidebar-collapsed #sidebarPanel {
+  width: 0px !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Toast Notifications */
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  animation: toastIn 0.2s ease forwards;
+}
+.toast.toast-success { border-color: rgba(16, 185, 129, 0.5); }
+.toast.toast-error { border-color: rgba(244, 63, 94, 0.5); }
+.toast.toast-info { border-color: rgba(6, 182, 212, 0.5); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* Canvas viewport explicit sizing */
+#networkCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  touch-action: none;
+}
