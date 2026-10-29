@@ -75,9 +75,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 function setupCanvasDimensions() {
   const rect = canvasViewport.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  canvas.style.width = `${rect.width}px`;
+  canvas.style.height = `${rect.height}px`;
   requestRender();
 }
 
@@ -555,9 +556,17 @@ function requestRender() {
 
 function renderCanvas() {
   const rect = canvasViewport.getBoundingClientRect();
-  ctx.clearRect(0, 0, rect.width, rect.height);
+  const dpr = window.devicePixelRatio || 1;
 
   ctx.save();
+  // Reset transform to identity and clear the entire backing store
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Scale by DPR so 1 canvas unit = 1 CSS pixel
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Pan and zoom in CSS pixel space
   ctx.translate(state.viewport.x, state.viewport.y);
   ctx.scale(state.viewport.zoom, state.viewport.zoom);
 
@@ -866,7 +875,7 @@ function initCanvasInteractions() {
 }
 
 function screenToWorld(sx, sy) {
-  const rect = canvasViewport.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   return {
     x: (sx - rect.left - state.viewport.x) / state.viewport.zoom,
     y: (sy - rect.top - state.viewport.y) / state.viewport.zoom
@@ -875,24 +884,49 @@ function screenToWorld(sx, sy) {
 
 function findNodeAt(wx, wy) {
   const locs = state.network.locations || [];
+  let bestNode = null;
+  let bestDist = Infinity;
+  const maxWorldRadius = 24 / state.viewport.zoom;
   for (let i = locs.length - 1; i >= 0; i--) {
-    if (Math.hypot(locs[i].x - wx, locs[i].y - wy) <= 24) return locs[i];
+    const d = Math.hypot(locs[i].x - wx, locs[i].y - wy);
+    if (d <= maxWorldRadius && d < bestDist) {
+      bestDist = d;
+      bestNode = locs[i];
+    }
   }
-  return null;
+  return bestNode;
 }
 
 function findRoadAt(wx, wy) {
   const roads = state.network.roads || [];
   const locs = state.network.locations || [];
+  let bestRoad = null;
+  let bestDist = Infinity;
+  // Screen pixel tolerance converted to world units
+  const maxWorldDist = 12 / state.viewport.zoom;
+
   for (const r of roads) {
     const a = locs.find(l => l.name === r.locA);
     const b = locs.find(l => l.name === r.locB);
     if (!a || !b) continue;
-    // Point-to-segment distance with generous click tolerance
+
+    // Check if clicking directly on the road's middle info badge
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    const badgeHalfW = 46 / state.viewport.zoom;
+    const badgeHalfH = 14 / state.viewport.zoom;
+    if (Math.abs(wx - midX) <= badgeHalfW && Math.abs(wy - midY) <= badgeHalfH) {
+      return r;
+    }
+
+    // Point-to-segment distance to road line
     const dist = distToSegment(wx, wy, a.x, a.y, b.x, b.y);
-    if (dist <= 14) return r;
+    if (dist <= maxWorldDist && dist < bestDist) {
+      bestDist = dist;
+      bestRoad = r;
+    }
   }
-  return null;
+  return bestRoad;
 }
 
 function distToSegment(px, py, x1, y1, x2, y2) {
