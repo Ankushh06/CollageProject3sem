@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RouteFlow - Delivery Route Optimization System (DSA + DBMS)</title>
+  <meta name="description" content="User-friendly intelligent delivery route planner with Dijkstra's algorithm, interactive map, real-time road closures, and SQLite fleet analytics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow layers -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar" id="appHeader">
+    <div class="nav-left">
+      <div class="brand-logo" id="btnLogo">
+        <div class="logo-icon-wrap">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span class="pulse-ring"></span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">ROUTE<span>FLOW</span></div>
+          <div class="brand-subtitle">Smart Delivery Routing • DSA + DBMS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick 1-Click Demo Scenarios Strip -->
+    <div class="quick-scenarios-strip">
+      <span class="scenarios-label">⚡ 1-Click Demos:</span>
+      <button type="button" class="scenario-chip" id="demoPointToPoint" title="Calculate shortest route from Warehouse to Airport">
+        🚀 Warehouse ➔ Airport
+      </button>
+      <button type="button" class="scenario-chip" id="demoMultiStop" title="Optimize multi-stop delivery tour for 4 customers">
+        📦 4-Stop Delivery Tour
+      </button>
+      <button type="button" class="scenario-chip" id="demoClosure" title="Simulate a road closure and watch Dijkstra find an alternative detour">
+        🚧 Road Closure Detour
+      </button>
+      <button type="button" class="scenario-chip chip-reset" id="demoReset" title="Clear current route and reset selection">
+        🔄 Clear Route
+      </button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="nav-right">
+      <!-- Mode Toggle -->
+      <div class="mode-toggle-group" title="Choose optimization metric">
+        <button type="button" class="mode-pill active" id="btnModeDistance" data-mode="DISTANCE">
+          <span>📏</span> Distance
+        </button>
+        <button type="button" class="mode-pill" id="btnModeTime" data-mode="TIME">
+          <span>⏱️</span> Time
+        </button>
+      </div>
+
+      <button class="btn btn-ghost btn-sm" id="btnReloadSample" title="Reset map to clean default city">
+        <span>🔄</span> Reset City
+      </button>
+
+      <button class="btn btn-ghost btn-sm" id="btnOpenDocs" title="System Architecture & Query Guide">
+        <span>ℹ️</span> Docs
+      </button>
+    </div>
+  </header>
+
+  <!-- Guided Quick-Start Notification Banner -->
+  <div class="guided-helper-banner" id="helperBanner">
+    <div class="banner-content">
+      <span class="banner-icon">💡</span>
+      <span class="banner-text"><strong>Easy Routing:</strong> Click any location on the map to set your <strong>Start</strong> point, click another to set your <strong>Destination</strong>, or click any road directly to <strong>Close / Open</strong> it!</span>
+    </div>
+    <button class="banner-dismiss" id="btnDismissBanner" title="Dismiss hint">&times;</button>
+  </div>
+
+  <!-- Main Application Workspace -->
+  <main class="app-layout" id="appLayout">
+    <!-- Collapsible Left Sidebar -->
+    <aside class="sidebar-panel" id="sidebarPanel">
+      <!-- Tab Headers -->
+      <nav class="sidebar-nav">
+        <button class="nav-tab active" data-tab="tabPlanner" id="tabNavPlanner">
+          <span class="tab-icon">🎯</span>
+          <span class="tab-label">Plan Route</span>
+        </button>
+        <button class="nav-tab" data-tab="tabNetwork" id="tabNavNetwork">
+          <span class="tab-icon">🗺️</span>
+          <span class="tab-label">Roads & Closures</span>
+        </button>
+        <button class="nav-tab" data-tab="tabFleet" id="tabNavFleet">
+          <span class="tab-icon">🚚</span>
+          <span class="tab-label">Drivers & Fleet</span>
+        </button>
+        <button class="nav-tab" data-tab="tabAnalytics" id="tabNavAnalytics">
+          <span class="tab-icon">📊</span>
+          <span class="tab-label">Trip Logs</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Body -->
+      <div class="sidebar-content">
+        <!-- TAB 1: ROUTE PLANNER -->
+        <section class="tab-pane active" id="tabPlanner">
+          <!-- Sub-mode Selector -->
+          <div class="segmented-control">
+            <button type="button" class="segment-btn active" id="btnSubPointToPoint">
+              📍 Single Route (A ➔ B)
+            </button>
+            <button type="button" class="segment-btn" id="btnSubMultiStop">
+              📦 Multi-Stop Tour (TSP)
+            </button>
+          </div>
+
+          <!-- SINGLE ROUTE FORM -->
+          <div class="planner-box" id="formPointToPoint">
+            <!-- Visual Chip Picker for Source -->
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-badge start-badge">A</span> Starting Point (Source)
+              </label>
+              <div class="quick-chip-picker" id="chipsSource">
+                <!-- Location chips generated dynamically -->
+              </div>
+              <select id="selectSource" class="form-select mt-1 hidden"></select>
+            </div>
+
+            <div class="swap-locations-row">
+              <button type="button" class="btn-icon-swap" id="btnSwapLocations" title="Swap Source and Destination">
+                ⇅ Swap Start & End
+              </button>
+            </div>
+
+            <!-- Visual Chip Picker for Destination -->
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-badge end-badge">B</span> Destination Point
+              </label>
+              <div class="quick-chip-picker" id="chipsDestination">
+                <!-- Location chips generated dynamically -->
+              </div>
+              <select id="selectDestination" class="form-select mt-1 hidden"></select>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block btn-lg btn-glow" id="btnCalculateRoute">
+              <span class="btn-icon">🚀</span> Calculate Optimal Route (Dijkstra)
+            </button>
+          </div>
+
+          <!-- MULTI-STOP DELIVERY FORM -->
+          <div class="planner-box hidden" id="formMultiStop">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-badge start-badge">Depot</span> Starting Hub / Warehouse
+              </label>
+              <div class="quick-chip-picker" id="chipsDepot"></div>
+              <select id="selectDepot" class="form-select mt-1 hidden"></select>
+            </div>
+
+            <div class="form-group">
+              <div class="label-with-action">
+                <label class="form-label">Select Delivery Stops</label>
+                <div class="stop-quick-actions">
+                  <button type="button" class="btn-link" id="btnSelectAllStops">Select All</button>
+                  <span class="sep">•</span>
+                  <button type="button" class="btn-link" id="btnClearAllStops">Clear</button>
+                </div>
+              </div>
+              <div class="stops-checkbox-grid" id="stopsCheckboxList">
+                <!-- Populated dynamically with toggleable cards -->
+              </div>
+            </div>
+
+            <div class="form-check-group">
+              <label class="toggle-switch">
+                <input type="checkbox" id="chkReturnDepot" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Return to depot after completing all stops</span>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block btn-lg btn-glow" id="btnCalculateMultiStop">
+              <span class="btn-icon">⚡</span> Optimize Delivery Sequence
+            </button>
+          </div>
+
+          <!-- ROUTE RESULT & TURN-BY-TURN CARD -->
+          <div class="route-result-card hidden" id="routeResultCard">
+            <div class="result-header">
+              <div class="result-title-wrap">
+                <span class="result-badge" id="resultModeBadge">DISTANCE</span>
+                <span class="result-title">Optimal Route Found</span>
+              </div>
+              <button class="btn-close-result" id="btnCloseResult" title="Clear result">&times;</button>
+            </div>
+
+            <!-- Big Stat KPI Cards -->
+            <div class="result-kpis">
+              <div class="kpi-box">
+                <div class="kpi-num" id="resTotalKm">0.0</div>
+                <div class="kpi-unit">Kilometres</div>
+              </div>
+              <div class="kpi-divider"></div>
+              <div class="kpi-box">
+                <div class="kpi-num" id="resTotalMin">0.0</div>
+                <div class="kpi-unit">Travel Time</div>
+              </div>
+              <div class="kpi-divider"></div>
+              <div class="kpi-box">
+                <div class="kpi-num" id="resLegsCount">0</div>
+                <div class="kpi-unit">Road Legs</div>
+              </div>
+            </div>
+
+            <!-- Turn-by-Turn Visual Timeline -->
+            <div class="timeline-container">
+              <div class="timeline-title">Turn-by-Turn Driving Directions:</div>
+              <div class="turn-timeline" id="resTurnTimeline">
+                <!-- Step by step directions -->
+              </div>
+            </div>
+
+            <!-- Direct SQLite Save Section -->
+            <div class="save-trip-section">
+              <div class="save-trip-title">💾 Save Trip to SQLite Database</div>
+              <div class="save-trip-form-grid">
+                <div class="form-group-compact">
+                  <label for="selectTripDriver" class="form-label-xs">Assign Driver:</label>
+                  <select id="selectTripDriver" class="form-select form-select-sm"></select>
+                </div>
+                <div class="form-group-compact">
+                  <label for="selectTripVehicle" class="form-label-xs">Assign Vehicle:</label>
+                  <select id="selectTripVehicle" class="form-select form-select-sm"></select>
+                </div>
+              </div>
+              <button type="button" class="btn btn-emerald btn-block" id="btnSaveTrip">
+                Commit Trip to Database (Transaction)
+              </button>
+              <div class="save-feedback hidden" id="saveTripFeedback"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: ROAD NETWORK & CLOSURES -->
+        <section class="tab-pane" id="tabNetwork">
+          <!-- Road Closure Simulator -->
+          <div class="accordion-card">
+            <div class="card-header-styled">
+              <span class="card-icon">🚧</span>
+              <div>
+                <h3>Interactive Road Closure Simulator</h3>
+                <div class="subtext">Toggle roads below or <strong>click directly on roads</strong> on the map!</div>
+              </div>
+            </div>
+            <div class="road-closure-list" id="roadClosureList">
+              <!-- Dynamically populated toggle list -->
+            </div>
+          </div>
+
+          <!-- Add Location -->
+          <div class="accordion-card mt-3">
+            <div class="card-header-styled">
+              <span class="card-icon">📍</span>
+              <h3>Add New City Location</h3>
+            </div>
+            <form id="formAddLocation" onsubmit="return false;">
+              <div class="form-group">
+                <label for="locNameInput" class="form-label">Location Name</label>
+                <input type="text" id="locNameInput" class="form-input" placeholder="e.g. City Plaza" required>
+              </div>
+              <div class="form-group">
+                <label for="locTypeSelect" class="form-label">Location Type</label>
+                <select id="locTypeSelect" class="form-select">
+                  <option value="CUSTOMER">🛒 Customer (Delivery destination)</option>
+                  <option value="WAREHOUSE">🏢 Warehouse (Depot hub)</option>
+                  <option value="LANDMARK">🏛️ Landmark / Transit hub</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-secondary btn-block" id="btnAddLocation">
+                + Add Location to Database
+              </button>
+            </form>
+          </div>
+
+          <!-- Add / Edit Road -->
+          <div class="accordion-card mt-3">
+            <div class="card-header-styled">
+              <span class="card-icon">🛣️</span>
+              <h3>Connect Locations with a Road</h3>
+            </div>
+            <form id="formAddRoad" onsubmit="return false;">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="roadFromSelect" class="form-label">Location A</label>
+                  <select id="roadFromSelect" class="form-select"></select>
+                </div>
+                <div class="form-group">
+                  <label for="roadToSelect" class="form-label">Location B</label>
+                  <select id="roadToSelect" class="form-select"></select>
+                </div>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="roadDistanceInput" class="form-label">Distance (km)</label>
+                  <input type="number" id="roadDistanceInput" class="form-input" min="0.1" step="0.1" placeholder="5.0" required>
+                </div>
+                <div class="form-group">
+                  <label for="roadTimeInput" class="form-label">Time (min)</label>
+                  <input type="number" id="roadTimeInput" class="form-input" min="0.1" step="0.1" placeholder="12.0" required>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-block" id="btnAddRoad">
+                Save Road Connection
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- TAB 3: FLEET & DRIVERS -->
+        <section class="tab-pane" id="tabFleet">
+          <div class="accordion-card">
+            <div class="card-header-styled">
+              <span class="card-icon">🧑‍✈️</span>
+              <h3>Delivery Drivers</h3>
+            </div>
+            <form id="formAddDriver" onsubmit="return false;" class="mb-3">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="driverNameInput" class="form-label">Name</label>
+                  <input type="text" id="driverNameInput" class="form-input" placeholder="e.g. Rahul Sharma" required>
+                </div>
+                <div class="form-group">
+                  <label for="driverPhoneInput" class="form-label">Phone (7-15 digits)</label>
+                  <input type="tel" id="driverPhoneInput" class="form-input" placeholder="e.g. 9876543210" required>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-block" id="btnAddDriver">+ Register Driver</button>
+            </form>
+            <div class="table-scroll-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                  </tr>
+                </thead>
+                <tbody id="driverRosterBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="accordion-card mt-3">
+            <div class="card-header-styled">
+              <span class="card-icon">🚚</span>
+              <h3>Vehicle Fleet</h3>
+            </div>
+            <form id="formAddVehicle" onsubmit="return false;" class="mb-3">
+              <div class="form-group">
+                <label for="vehicleRegInput" class="form-label">Registration Plate</label>
+                <input type="text" id="vehicleRegInput" class="form-input" placeholder="e.g. DL-01-AB-1234" required>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="vehicleTypeSelect" class="form-label">Type</label>
+                  <select id="vehicleTypeSelect" class="form-select">
+                    <option value="VAN">Van</option>
+                    <option value="BIKE">Bike</option>
+                    <option value="TRUCK">Truck</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="vehicleCapInput" class="form-label">Capacity (kg)</label>
+                  <input type="number" id="vehicleCapInput" class="form-input" min="1" step="10" placeholder="800" required>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-block" id="btnAddVehicle">+ Add Vehicle</button>
+            </form>
+            <div class="table-scroll-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Plate</th>
+                    <th>Type</th>
+                    <th>Capacity</th>
+                  </tr>
+                </thead>
+                <tbody id="vehicleRosterBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: DBMS ANALYTICS & LOGS -->
+        <section class="tab-pane" id="tabAnalytics">
+          <div class="reports-subnav">
+            <button type="button" class="report-tab active" data-report="repTrips">Trip History</button>
+            <button type="button" class="report-tab" data-report="repDrivers">Driver Stats</button>
+            <button type="button" class="report-tab" data-report="repLocations">Top Stops</button>
+            <button type="button" class="report-tab" data-report="repAudit">Audit Trail</button>
+          </div>
+
+          <!-- Trip History -->
+          <div class="report-panel active" id="repTrips">
+            <div class="report-title-bar">
+              <h4>Saved Trips (<code>v_trip_summary</code>)</h4>
+              <button class="btn-refresh-icon" id="btnRefreshTrips" title="Refresh">↻</button>
+            </div>
+            <div class="table-scroll-wrapper large-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>When</th>
+                    <th>Depot</th>
+                    <th>Driver</th>
+                    <th>Vehicle</th>
+                    <th>Mode</th>
+                    <th>Stops</th>
+                    <th>km</th>
+                    <th>min</th>
+                  </tr>
+                </thead>
+                <tbody id="tripHistoryBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Driver Stats -->
+          <div class="report-panel" id="repDrivers">
+            <div class="report-title-bar">
+              <h4>Driver Workload (<code>GROUP BY + Aggregate</code>)</h4>
+              <button class="btn-refresh-icon" id="btnRefreshDrivers" title="Refresh">↻</button>
+            </div>
+            <div class="table-scroll-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Driver</th>
+                    <th>Trips</th>
+                    <th>Total Distance</th>
+                    <th>Avg Duration</th>
+                  </tr>
+                </thead>
+                <tbody id="driverPerfBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Top Stops -->
+          <div class="report-panel" id="repLocations">
+            <div class="report-title-bar">
+              <h4>Most Visited Customer Destinations</h4>
+              <button class="btn-refresh-icon" id="btnRefreshLocations" title="Refresh">↻</button>
+            </div>
+            <div class="table-scroll-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Destination</th>
+                    <th>Type</th>
+                    <th>Deliveries Completed</th>
+                  </tr>
+                </thead>
+                <tbody id="topLocationsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Audit Trail -->
+          <div class="report-panel" id="repAudit">
+            <div class="report-title-bar">
+              <h4>Automatic SQLite Trigger Audit Trail</h4>
+              <button class="btn-refresh-icon" id="btnRefreshAudit" title="Refresh">↻</button>
+            </div>
+            <div class="table-scroll-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Road ID</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTrailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- Center Interactive Visualizer Stage -->
+    <section class="stage-panel" id="stagePanel">
+      <!-- Floating Map Action Toolbar -->
+      <div class="map-toolbar">
+        <div class="map-tools-left">
+          <button class="map-tool-btn" id="btnToggleSidebar" title="Toggle Sidebar">
+            ☰ <span class="btn-label-inline">Menu</span>
+          </button>
+          <button class="map-tool-btn" id="btnZoomIn" title="Zoom in">+</button>
+          <button class="map-tool-btn" id="btnZoomOut" title="Zoom out">-</button>
+          <button class="map-tool-btn" id="btnCenterNodes" title="Auto fit graph to screen">⊡ Fit Map</button>
+        </div>
+
+        <!-- Live Vehicle Animation Controller -->
+        <div class="map-animation-controls hidden" id="mapAnimControls">
+          <button class="map-tool-btn anim-play-btn" id="btnToggleAnim" title="Pause / Play animation">⏸</button>
+          <div class="anim-scrubber-wrap">
+            <div class="anim-scrubber-fill" id="animScrubberFill"></div>
+          </div>
+          <span class="anim-speed-label">Speed:</span>
+          <button class="map-tool-btn speed-btn active" data-speed="1">1x</button>
+          <button class="map-tool-btn speed-btn" data-speed="2">2x</button>
+          <button class="map-tool-btn speed-btn" data-speed="4">4x</button>
+        </div>
+
+        <!-- Map Legend -->
+        <div class="map-legend">
+          <div class="legend-item"><span class="legend-dot dot-warehouse"></span> Depot</div>
+          <div class="legend-item"><span class="legend-dot dot-customer"></span> Customer</div>
+          <div class="legend-item"><span class="legend-dot dot-landmark"></span> Landmark</div>
+          <div class="legend-item"><span class="legend-line line-active"></span> Open Road</div>
+          <div class="legend-item"><span class="legend-line line-closed"></span> Closed Road</div>
+          <div class="legend-item"><span class="legend-line line-route"></span> Active Route</div>
+        </div>
+      </div>
+
+      <!-- HTML5 Canvas Viewport -->
+      <div class="canvas-viewport" id="canvasViewport">
+        <canvas id="networkCanvas"></canvas>
+
+        <!-- Floating Node Context Popup -->
+        <div class="node-context-popup hidden" id="nodeContextPopup">
+          <div class="popup-header">
+            <span class="popup-icon" id="popupIcon">🏢</span>
+            <div class="popup-title-wrap">
+              <div class="popup-name" id="popupName">Warehouse</div>
+              <div class="popup-type" id="popupType">WAREHOUSE</div>
+            </div>
+            <button class="popup-close" id="btnClosePopup">&times;</button>
+          </div>
+          <div class="popup-connections" id="popupConnections">
+            <!-- Road connections -->
+          </div>
+          <div class="popup-actions">
+            <button type="button" class="btn btn-emerald btn-sm" id="btnPopupSetStart">🚩 Set as Start</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnPopupSetEnd">🏁 Set as End</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnPopupAddStop">➕ Add Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Floating Status HUD at bottom of map -->
+      <div class="map-live-hud" id="mapLiveHud">
+        <div class="hud-status-badge">
+          <span class="status-pulse"></span>
+          <span id="hudStatusText">Ready: Click any node to plan a route</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Docs & Architecture Modal -->
+  <div class="modal-backdrop hidden" id="docsModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">System Architecture: DSA + DBMS Combined</h3>
+        <button class="modal-close" id="btnCloseDocs">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>1. DSA Foundation (Graph & Dijkstra)</h4>
+        <p>The city road network is represented in memory as an adjacency list graph <code>List&lt;List&lt;Edge&gt;&gt;</code>. Dijkstra's shortest path algorithm runs in <code>O((V + E) log V)</code> using a binary min-heap (<code>PriorityQueue</code>). Multi-stop delivery combines a greedy nearest-neighbor heuristic with Dijkstra legs.</p>
+
+        <h4>2. Relational DBMS Foundation (SQLite)</h4>
+        <p>The system adheres to 3NF relational normalization:</p>
+        <ul>
+          <li><strong>Tables:</strong> <code>locations</code>, <code>roads</code>, <code>drivers</code>, <code>vehicles</code>, <code>delivery_trips</code>, <code>trip_stops</code>, <code>road_audit</code></li>
+          <li><strong>Triggers:</strong> <code>trg_roads_insert</code> and <code>trg_roads_update</code> automatically record road changes and closures into <code>road_audit</code>.</li>
+          <li><strong>Views:</strong> <code>v_active_roads</code> and <code>v_trip_summary</code> provide high-level abstractions for route queries and reporting.</li>
+          <li><strong>Transactions:</strong> <code>saveTrip</code> wraps trip insertion and all associated stops into a single atomic transaction.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnDismissDocs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
