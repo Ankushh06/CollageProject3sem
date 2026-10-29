@@ -1,0 +1,20 @@
+{
+  "name": "routeflow",
+  "version": "1.0.0",
+  "description": "RouteFlow - Intelligent Delivery Route Optimization (DSA Dijkstra + Relational DBMS)",
+  "main": "web/index.html",
+  "scripts": {
+    "start": "java -cp \"bin;sqlite-jdbc.jar;ojdbc11.jar\" delivery.Main --server"
+  },
+  "keywords": [
+    "dijkstra",
+    "route-optimization",
+    "dsa",
+    "oracle-database",
+    "sqlite",
+    "tailwind-css",
+    "vercel"
+  ],
+  "author": "Ankush",
+  "license": "MIT"
+}

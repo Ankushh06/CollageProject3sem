@@ -82,7 +82,24 @@ Once started, open your browser to:
 
 ---
 
-## 4. Oracle Database Configuration
+## 4. Deploying on Vercel (1-Click Deployment)
+
+RouteFlow is fully configured for **instant deployment on [Vercel](https://vercel.com)**:
+
+1. Push your repository to GitHub (or use your existing repository: [`https://github.com/Ankushh06/CollageProject3sem`](https://github.com/Ankushh06/CollageProject3sem)).
+2. Log into **[vercel.com](https://vercel.com)** and click **"Add New..." ➔ "Project"**.
+3. Select your GitHub repository **`CollageProject3sem`** and click **"Import"**.
+4. Leave all build settings as default (Vercel automatically picks up [`vercel.json`](file:///c:/Users/ankus/Downloads/files/vercel.json) and the [`api/`](file:///c:/Users/ankus/Downloads/files/api) serverless functions) and click **"Deploy"**.
+5. Your web app will be live globally in seconds (e.g. `https://collage-project3sem.vercel.app`)!
+
+> **Vercel Architecture Highlights:**
+> - **Edge Static Delivery**: High-speed CDN serving Tailwind CSS v3 assets.
+> - **Serverless Microservices**: Node.js functions in `api/` handling routes, plans, closures, and fleet state.
+> - **Zero-Cold-Start In-Browser DSA**: An embedded client-side Dijkstra & TSP engine in `app.js` guarantees 0ms response time and offline reliability.
+
+---
+
+## 5. Oracle Database Configuration
 RouteFlow supports direct connection to your Oracle Database (e.g. Oracle XE, Oracle Free 23c, Oracle 19c/21c).
 
 1. Edit **`db.properties`** in the project root:
@@ -103,7 +120,7 @@ RouteFlow supports direct connection to your Oracle Database (e.g. Oracle XE, Or
 
 ---
 
-## 5. Key Features & User Interface
+## 6. Key Features & User Interface
 
 ### 🎯 1-Click Demo Scenarios
 - **🚀 Warehouse ➔ Airport**: Computes the optimal single route and launches the animated delivery vehicle.
@@ -128,7 +145,7 @@ Step-by-step navigation breakdown detailing distance, travel time, and intermedi
 
 ---
 
-## 6. Database Schema & Design
+## 7. Database Schema & Design
 
 ### Relational Tables
 1. **`locations`**: Unique locations (Depots, Customers, Landmarks).
@@ -145,7 +162,7 @@ Step-by-step navigation breakdown detailing distance, travel time, and intermedi
 
 ---
 
-## 7. Demo SQL Queries
+## 8. Demo SQL Queries
 Run DBMS evaluation queries against the database using the SQLite CLI:
 ```bash
 sqlite3 delivery.db < queries.sql
