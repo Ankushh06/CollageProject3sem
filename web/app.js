@@ -402,6 +402,9 @@ async function calculatePointToPoint() {
     startRouteAnimation(res);
     updateHudText(`Optimal Route: ${res.km.toFixed(1)} km in ${res.minutes.toFixed(0)} min`);
     showToast(`Optimal route found: ${res.km.toFixed(1)} km in ${res.minutes.toFixed(0)} min`, 'success');
+    if (window.innerWidth < 768 && window.setMobileView) {
+      window.setMobileView('map');
+    }
   } else {
     showToast(`No open road path exists between ${source} and ${destination}!`, 'error');
     updateHudText(`No route found! Try reopening roads.`);
@@ -438,6 +441,9 @@ async function calculateMultiStop() {
     startRouteAnimation(res);
     updateHudText(`Multi-stop tour: ${res.order.length} stops, ${res.km.toFixed(1)} km`);
     showToast(`Multi-stop route optimized: ${res.order.length} stops, ${res.km.toFixed(1)} km`, 'success');
+    if (window.innerWidth < 768 && window.setMobileView) {
+      window.setMobileView('map');
+    }
   } else {
     showToast('Could not calculate multi-stop route. Check road closures.', 'error');
     clearRouteResult();
@@ -1103,6 +1109,12 @@ function initCanvasInteractions() {
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
   canvasViewport.addEventListener('wheel', onWheel, { passive: false });
+
+  // Native Mobile & Tablet Touch Listeners
+  canvasViewport.addEventListener('touchstart', onTouchStart, { passive: false });
+  window.addEventListener('touchmove', onTouchMove, { passive: false });
+  window.addEventListener('touchend', onTouchEnd, { passive: false });
+  window.addEventListener('touchcancel', onTouchEnd, { passive: false });
 }
 
 function screenToWorld(sx, sy) {
@@ -1134,7 +1146,7 @@ function findRoadAt(wx, wy) {
   let bestRoad = null;
   let bestDist = Infinity;
   // Screen pixel tolerance converted to world units
-  const maxWorldDist = 12 / state.viewport.zoom;
+  const maxWorldDist = 14 / state.viewport.zoom;
 
   for (const r of roads) {
     const a = locs.find(l => l.name === r.locA);
@@ -1171,6 +1183,10 @@ function distToSegment(px, py, x1, y1, x2, y2) {
 let pointerDownScreen = null;
 let isActuallyDraggingNode = false;
 let isActuallyPanning = false;
+
+// Touch State
+let touchPinchDist = null;
+let touchStartPos = null;
 
 function onMouseDown(e) {
   if (e.button !== 0) return;
@@ -1269,6 +1285,131 @@ async function onMouseUp(e) {
   }
 }
 
+// ----------------------------------------------------------------------------
+//  TOUCH GESTURES FOR MOBILE & TABLETS (Pan, Pinch-to-Zoom, Tap)
+// ----------------------------------------------------------------------------
+function onTouchStart(e) {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    pointerDownScreen = { x: t.clientX, y: t.clientY };
+    touchStartPos = { x: t.clientX, y: t.clientY };
+    isActuallyDraggingNode = false;
+    isActuallyPanning = false;
+
+    const pos = screenToWorld(t.clientX, t.clientY);
+    const clickedNode = findNodeAt(pos.x, pos.y);
+
+    if (clickedNode) {
+      state.viewport.draggedNode = clickedNode;
+      state.viewport.dragOffset = { x: clickedNode.x - pos.x, y: clickedNode.y - pos.y };
+    } else {
+      state.viewport.isPanning = true;
+      state.viewport.panStart = { x: t.clientX - state.viewport.x, y: t.clientY - state.viewport.y };
+    }
+  } else if (e.touches.length === 2) {
+    state.viewport.isPanning = false;
+    state.viewport.draggedNode = null;
+    isActuallyDraggingNode = false;
+    isActuallyPanning = false;
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    touchPinchDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  }
+}
+
+function onTouchMove(e) {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    const pos = screenToWorld(t.clientX, t.clientY);
+
+    if (pointerDownScreen) {
+      const dist = Math.hypot(t.clientX - pointerDownScreen.x, t.clientY - pointerDownScreen.y);
+      if (dist > 8) {
+        if (state.viewport.draggedNode) {
+          isActuallyDraggingNode = true;
+        } else if (state.viewport.isPanning) {
+          isActuallyPanning = true;
+        }
+      }
+    }
+
+    if (state.viewport.draggedNode && isActuallyDraggingNode) {
+      if (e.cancelable) e.preventDefault();
+      state.viewport.draggedNode.x = Math.round(pos.x + state.viewport.dragOffset.x);
+      state.viewport.draggedNode.y = Math.round(pos.y + state.viewport.dragOffset.y);
+      requestRender();
+      return;
+    }
+
+    if (state.viewport.isPanning && isActuallyPanning) {
+      if (e.cancelable) e.preventDefault();
+      state.viewport.x = t.clientX - state.viewport.panStart.x;
+      state.viewport.y = t.clientY - state.viewport.panStart.y;
+      requestRender();
+      return;
+    }
+  } else if (e.touches.length === 2 && touchPinchDist) {
+    if (e.cancelable) e.preventDefault();
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    const zoomRatio = currentDist / touchPinchDist;
+    const newZoom = Math.min(Math.max(state.viewport.zoom * zoomRatio, 0.4), 3.0);
+
+    const midX = (t1.clientX + t2.clientX) / 2;
+    const midY = (t1.clientY + t2.clientY) / 2;
+    const rect = canvas.getBoundingClientRect();
+    const mx = midX - rect.left;
+    const my = midY - rect.top;
+
+    state.viewport.x = mx - (mx - state.viewport.x) * (newZoom / state.viewport.zoom);
+    state.viewport.y = my - (my - state.viewport.y) * (newZoom / state.viewport.zoom);
+    state.viewport.zoom = newZoom;
+    touchPinchDist = currentDist;
+    requestRender();
+  }
+}
+
+async function onTouchEnd(e) {
+  if (e.touches.length === 0) {
+    const wasDragging = isActuallyDraggingNode;
+    const wasPanning = isActuallyPanning;
+    const dragged = state.viewport.draggedNode;
+    const startPoint = touchStartPos;
+
+    pointerDownScreen = null;
+    touchStartPos = null;
+    touchPinchDist = null;
+    state.viewport.draggedNode = null;
+    state.viewport.isPanning = false;
+    isActuallyDraggingNode = false;
+    isActuallyPanning = false;
+
+    if (dragged && wasDragging) {
+      await apiPost('/api/locations/coords', { id: dragged.id, x: dragged.x, y: dragged.y });
+      return;
+    }
+
+    if (wasPanning || !startPoint) return;
+
+    // Tap detection on touch release
+    const pos = screenToWorld(startPoint.x, startPoint.y);
+    const clickedNode = findNodeAt(pos.x, pos.y);
+    if (clickedNode) {
+      showNodePopup(clickedNode);
+      return;
+    }
+
+    const clickedRoad = findRoadAt(pos.x, pos.y);
+    if (clickedRoad) {
+      await toggleRoadState(clickedRoad.locA, clickedRoad.locB, !clickedRoad.isActive);
+      return;
+    }
+  } else if (e.touches.length === 1) {
+    touchPinchDist = null;
+  }
+}
+
 function onWheel(e) {
   e.preventDefault();
   const rect = canvasViewport.getBoundingClientRect();
@@ -1323,11 +1464,47 @@ function initEventListeners() {
     document.getElementById('helperBanner').classList.add('hidden');
   });
 
-  // Toggle Sidebar Button
+  // Toggle Sidebar Button (Desktop & Mobile)
+  const appLayout = document.getElementById('appLayout');
+  const mobileMapBtn = document.getElementById('btnMobileMap');
+  const mobileControlsBtn = document.getElementById('btnMobileControls');
+
+  function setMobileView(view) {
+    if (view === 'map') {
+      appLayout.classList.add('sidebar-collapsed');
+      mobileMapBtn?.classList.add('active');
+      mobileControlsBtn?.classList.remove('active');
+    } else {
+      appLayout.classList.remove('sidebar-collapsed');
+      mobileControlsBtn?.classList.add('active');
+      mobileMapBtn?.classList.remove('active');
+    }
+    setTimeout(setupCanvasDimensions, 280);
+  }
+  window.setMobileView = setMobileView;
+
   document.getElementById('btnToggleSidebar').addEventListener('click', () => {
-    document.getElementById('appLayout').classList.toggle('sidebar-collapsed');
+    const isNowCollapsed = appLayout.classList.toggle('sidebar-collapsed');
+    if (window.innerWidth < 768) {
+      if (isNowCollapsed) {
+        mobileMapBtn?.classList.add('active');
+        mobileControlsBtn?.classList.remove('active');
+      } else {
+        mobileControlsBtn?.classList.add('active');
+        mobileMapBtn?.classList.remove('active');
+      }
+    }
     setTimeout(setupCanvasDimensions, 280);
   });
+
+  mobileMapBtn?.addEventListener('click', () => setMobileView('map'));
+  mobileControlsBtn?.addEventListener('click', () => setMobileView('controls'));
+  document.getElementById('btnMobileCloseSidebar')?.addEventListener('click', () => setMobileView('map'));
+
+  // Mobile initial default view: start on map
+  if (window.innerWidth < 768) {
+    setMobileView('map');
+  }
 
   // Mode toggles
   document.getElementById('btnModeDistance').addEventListener('click', () => switchOptimizationMode('DISTANCE'));

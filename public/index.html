@@ -61,20 +61,20 @@
   <div class="fixed top-1/2 left-1/2 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- Top Navigation Header -->
-  <header class="relative z-30 h-16 bg-navy-900/90 backdrop-blur-xl border-b border-white/10 px-5 flex items-center justify-between gap-4">
+  <header class="relative z-30 h-14 sm:h-16 bg-navy-900/90 backdrop-blur-xl border-b border-white/10 px-3 sm:px-5 flex items-center justify-between gap-2 sm:gap-4">
     <!-- Brand Logo -->
-    <div class="flex items-center gap-3 shrink-0 cursor-pointer" id="btnLogo">
-      <div class="relative w-9 h-9 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400">
-        <svg class="w-5 h-5 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0 cursor-pointer" id="btnLogo">
+      <div class="relative w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
         <span class="absolute -inset-1 rounded-xl border border-cyan-400/30 animate-ping opacity-25"></span>
       </div>
       <div>
-        <div class="font-heading font-extrabold text-lg text-white leading-tight tracking-wide">
+        <div class="font-heading font-extrabold text-base sm:text-lg text-white leading-tight tracking-wide">
           ROUTE<span class="text-cyan-400">FLOW</span>
         </div>
-        <div class="text-[10px] text-slate-400 font-medium">DSA Dijkstra • Oracle / SQLite DBMS</div>
+        <div class="hidden sm:block text-[10px] text-slate-400 font-medium">DSA Dijkstra • Oracle / SQLite DBMS</div>
       </div>
     </div>
 
@@ -96,20 +96,23 @@
     </div>
 
     <!-- Top Right Status & Controls -->
-    <div class="flex items-center gap-3 shrink-0">
+    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
       <!-- Active Database Badge (Oracle / SQLite) -->
-      <button type="button" id="btnDbConfig" class="flex items-center gap-2 px-3 py-1.5 bg-navy-800 hover:bg-navy-750 border border-white/10 rounded-full text-xs transition cursor-pointer" title="View Database Engine Details">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" id="dbEngineDot"></span>
-        <span class="font-heading font-semibold text-slate-200" id="dbEngineLabel">Oracle / SQLite</span>
+      <button type="button" id="btnDbConfig" class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-navy-800 hover:bg-navy-750 border border-white/10 rounded-full text-xs transition cursor-pointer" title="View Database Engine Details">
+        <span class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" id="dbEngineDot"></span>
+        <span class="hidden sm:inline font-heading font-semibold text-slate-200" id="dbEngineLabel">Oracle / SQLite</span>
+        <span class="sm:hidden font-heading font-semibold text-slate-200 text-[11px]" id="dbEngineLabelMobile">DBMS</span>
       </button>
 
       <!-- Optimization Metric Toggle (Distance vs Time) -->
       <div class="flex bg-black/40 border border-white/10 rounded-full p-0.5">
-        <button type="button" id="btnModeDistance" data-mode="DISTANCE" class="mode-pill active px-3 py-1 rounded-full text-xs font-heading font-semibold text-slate-300 transition-all">
-          📏 Distance
+        <button type="button" id="btnModeDistance" data-mode="DISTANCE" class="mode-pill active px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-heading font-semibold text-slate-300 transition-all">
+          <span class="hidden sm:inline">📏 Distance</span>
+          <span class="sm:hidden">📏 Dist</span>
         </button>
-        <button type="button" id="btnModeTime" data-mode="TIME" class="mode-pill px-3 py-1 rounded-full text-xs font-heading font-semibold text-slate-300 transition-all">
-          ⏱️ Time
+        <button type="button" id="btnModeTime" data-mode="TIME" class="mode-pill px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-heading font-semibold text-slate-300 transition-all">
+          <span class="hidden sm:inline">⏱️ Time</span>
+          <span class="sm:hidden">⏱️ Time</span>
         </button>
       </div>
 
@@ -117,19 +120,19 @@
       <button type="button" id="btnReloadSample" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition" title="Restore sample city layout">
         <span>🔄</span> Reset City
       </button>
-      <button type="button" id="btnOpenDocs" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition" title="Architecture & Query Guide">
-        <span>ℹ️</span> Docs
+      <button type="button" id="btnOpenDocs" class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] sm:text-xs font-medium text-slate-300 transition" title="Architecture & Query Guide">
+        <span>ℹ️</span> <span class="hidden sm:inline">Docs</span>
       </button>
     </div>
   </header>
 
   <!-- Guided Quick-Start Helper Banner -->
-  <div id="helperBanner" class="relative z-20 bg-gradient-to-r from-cyan-950/60 via-navy-900 to-emerald-950/60 border-b border-cyan-500/20 px-5 py-1.5 flex items-center justify-between text-xs text-slate-300">
+  <div id="helperBanner" class="relative z-20 bg-gradient-to-r from-cyan-950/60 via-navy-900 to-emerald-950/60 border-b border-cyan-500/20 px-3 sm:px-5 py-1.5 flex items-center justify-between text-[11px] sm:text-xs text-slate-300">
     <div class="flex items-center gap-2">
       <span class="text-sm">💡</span>
-      <span><strong>Interactive City Map:</strong> Click any location on the map to set your <strong>Start</strong> point, click another for your <strong>Destination</strong>, or click any road directly to <strong>Close / Open</strong> it!</span>
+      <span><strong>Interactive City Map:</strong> Click any location to set <strong>Start</strong> / <strong>Destination</strong>, or click roads to <strong>Close / Open</strong>!</span>
     </div>
-    <button type="button" id="btnDismissBanner" class="text-slate-400 hover:text-white text-base leading-none">&times;</button>
+    <button type="button" id="btnDismissBanner" class="text-slate-400 hover:text-white text-base leading-none pl-2">&times;</button>
   </div>
 
   <!-- Main Application Layout -->
@@ -137,6 +140,16 @@
     
     <!-- Collapsible Sidebar Panel -->
     <aside id="sidebarPanel" class="w-[450px] shrink-0 bg-navy-900/90 backdrop-blur-2xl border-r border-white/10 flex flex-col overflow-hidden transition-all duration-300">
+      
+      <!-- Mobile Top Bar for Drawer (< 768px) -->
+      <div class="md:hidden flex items-center justify-between px-3 py-2 bg-navy-950 border-b border-white/10 shrink-0">
+        <span class="text-xs font-heading font-bold text-white flex items-center gap-1.5">
+          <span>⚡</span> Control Center & Planner
+        </span>
+        <button type="button" id="btnMobileCloseSidebar" class="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1">
+          <span>✕</span> <span>Close</span>
+        </button>
+      </div>
       
       <!-- Tab Headers -->
       <nav class="grid grid-cols-4 bg-navy-950/80 border-b border-white/10 p-1 gap-1 shrink-0">
@@ -552,7 +565,7 @@
       </div>
 
       <!-- Live Floating Bottom Status HUD -->
-      <div class="absolute bottom-4 left-4 z-20 pointer-events-none">
+      <div class="hud-status-container absolute bottom-4 left-4 z-20 pointer-events-none">
         <div class="inline-flex items-center gap-2 bg-navy-900/90 border border-white/10 rounded-full px-3.5 py-1.5 text-xs text-slate-200 backdrop-blur-xl shadow-lg">
           <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse"></span>
           <span id="hudStatusText">Ready: Click any node to plan a route</span>
@@ -561,9 +574,19 @@
     </section>
   </main>
 
+  <!-- Floating Mobile View Switcher (Visible only on < 768px screens) -->
+  <div id="mobileNavBar" class="hidden mobile-view-bar fixed bottom-3 left-1/2 -translate-x-1/2 z-40 items-center gap-1 bg-navy-900/95 border border-cyan-400/40 rounded-full p-1.5 shadow-2xl backdrop-blur-xl pointer-events-auto">
+    <button type="button" id="btnMobileMap" class="mobile-nav-btn active px-4 py-1.5 rounded-full text-xs font-heading font-bold flex items-center gap-1.5 transition">
+      <span>🗺️</span> <span>City Map</span>
+    </button>
+    <button type="button" id="btnMobileControls" class="mobile-nav-btn px-4 py-1.5 rounded-full text-xs font-heading font-bold flex items-center gap-1.5 transition">
+      <span>📋</span> <span>Controls</span>
+    </button>
+  </div>
+
   <!-- Oracle Database Configuration Modal -->
-  <div id="oracleModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn">
+  <div id="oracleModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-[92vw] max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
       <div class="p-4 border-b border-white/10 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-xl">🏛️</span>
@@ -606,8 +629,8 @@ oracle.password=YourPassword</pre>
   </div>
 
   <!-- Docs & Architecture Modal -->
-  <div id="docsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-fadeIn">
+  <div id="docsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-[92vw] max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
       <div class="p-4 border-b border-white/10 flex items-center justify-between">
         <h3 class="font-heading font-bold text-base text-white">System Architecture: DSA + DBMS Combined</h3>
         <button type="button" id="btnCloseDocs" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
