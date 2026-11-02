@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>RouteFlow - Intelligent Delivery Route Optimization (ADS C++ Engine)</title>
   <meta name="description" content="High performance route optimization platform with C++ Advanced Data Structures (ADS), Dijkstra min-heap algorithm, interactive canvas map, and real-time road closures.">
   
@@ -17,6 +17,14 @@
     tailwind.config = {
       darkMode: 'class',
       theme: {
+        screens: {
+          'xs': '420px',
+          'sm': '640px',
+          'md': '768px',
+          'lg': '1024px',
+          'xl': '1280px',
+          '2xl': '1536px'
+        },
         extend: {
           colors: {
             navy: {
@@ -53,7 +61,7 @@
   </script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-navy-950 text-slate-100 font-sans h-screen w-screen overflow-hidden select-none antialiased">
+<body class="bg-navy-950 text-slate-100 font-sans h-screen h-[100dvh] w-screen overflow-hidden select-none antialiased">
 
   <!-- Ambient background glow mesh -->
   <div class="fixed -top-24 left-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -61,17 +69,17 @@
   <div class="fixed top-1/2 left-1/2 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- Top Navigation Header -->
-  <header class="relative z-30 h-14 sm:h-16 bg-navy-900/90 backdrop-blur-xl border-b border-white/10 px-3 sm:px-5 flex items-center justify-between gap-2 sm:gap-4">
+  <header class="relative z-30 h-13 sm:h-16 bg-navy-900/90 backdrop-blur-xl border-b border-white/10 px-2.5 sm:px-5 flex items-center justify-between gap-1.5 sm:gap-4">
     <!-- Brand Logo -->
-    <div class="flex items-center gap-2 sm:gap-3 shrink-0 cursor-pointer" id="btnLogo">
-      <div class="relative w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0 cursor-pointer" id="btnLogo" title="RouteFlow Home">
+      <div class="relative w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400 shrink-0">
         <svg class="w-4 h-4 sm:w-5 sm:h-5 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
         <span class="absolute -inset-1 rounded-xl border border-cyan-400/30 animate-ping opacity-25"></span>
       </div>
       <div>
-        <div class="font-heading font-extrabold text-base sm:text-lg text-white leading-tight tracking-wide">
+        <div class="font-heading font-extrabold text-sm sm:text-lg text-white leading-tight tracking-wide">
           ROUTE<span class="text-cyan-400">FLOW</span>
         </div>
         <div class="hidden sm:block text-[10px] text-slate-400 font-medium">ADS Dijkstra • C++14 Graph Engine</div>
@@ -79,21 +87,21 @@
     </div>
 
     <!-- Top Right Status & Controls -->
-    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+    <div class="flex items-center gap-1 sm:gap-2.5 shrink-0">
       <!-- Active ADS Engine Badge (C++14) -->
-      <button type="button" id="btnDbConfig" class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-navy-800 hover:bg-navy-750 border border-white/10 rounded-full text-xs transition cursor-pointer" title="View ADS Engine Details">
-        <span class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] animate-pulse" id="dbEngineDot"></span>
+      <button type="button" id="btnDbConfig" class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-navy-800 hover:bg-navy-750 border border-white/10 rounded-full text-xs transition cursor-pointer" title="View ADS Engine Details">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] animate-pulse" id="dbEngineDot"></span>
         <span class="hidden sm:inline font-heading font-semibold text-slate-200" id="dbEngineLabel">ADS C++14</span>
-        <span class="sm:hidden font-heading font-semibold text-slate-200 text-[11px]" id="dbEngineLabelMobile">ADS</span>
+        <span class="sm:hidden font-heading font-semibold text-slate-200 text-[10px]" id="dbEngineLabelMobile">ADS</span>
       </button>
 
       <!-- Optimization Metric Toggle (Distance vs Time) -->
       <div class="flex bg-black/40 border border-white/10 rounded-full p-0.5">
-        <button type="button" id="btnModeDistance" data-mode="DISTANCE" class="mode-pill active px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-heading font-semibold text-slate-300 transition-all">
+        <button type="button" id="btnModeDistance" data-mode="DISTANCE" class="mode-pill active px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-heading font-semibold text-slate-300 transition-all">
           <span class="hidden sm:inline">📏 Distance</span>
           <span class="sm:hidden">📏 Dist</span>
         </button>
-        <button type="button" id="btnModeTime" data-mode="TIME" class="mode-pill px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-heading font-semibold text-slate-300 transition-all">
+        <button type="button" id="btnModeTime" data-mode="TIME" class="mode-pill px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-heading font-semibold text-slate-300 transition-all">
           <span class="hidden sm:inline">⏱️ Time</span>
           <span class="sm:hidden">⏱️ Time</span>
         </button>
@@ -103,7 +111,7 @@
       <button type="button" id="btnReloadSample" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition" title="Restore sample city layout">
         <span>🔄</span> Reset City
       </button>
-      <button type="button" id="btnOpenDocs" class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] sm:text-xs font-medium text-slate-300 transition" title="Architecture & Query Guide">
+      <button type="button" id="btnOpenDocs" class="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] sm:text-xs font-medium text-slate-300 transition" title="Architecture & Query Guide">
         <span>ℹ️</span> <span class="hidden sm:inline">Docs</span>
       </button>
     </div>
@@ -111,49 +119,50 @@
 
   <!-- Guided Quick-Start Helper Banner -->
   <div id="helperBanner" class="relative z-20 bg-gradient-to-r from-cyan-950/60 via-navy-900 to-emerald-950/60 border-b border-cyan-500/20 px-3 sm:px-5 py-1.5 flex items-center justify-between text-[11px] sm:text-xs text-slate-300">
-    <div class="flex items-center gap-2">
-      <span class="text-sm">💡</span>
-      <span><strong>Interactive City Map:</strong> Click any location to set <strong>Start</strong> / <strong>Destination</strong>, or click roads to <strong>Close / Open</strong>!</span>
+    <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 pr-1">
+      <span class="text-sm shrink-0">💡</span>
+      <span class="truncate sm:whitespace-normal">
+        <span class="hidden sm:inline"><strong>Interactive City Map:</strong> Click any location to set <strong>Start</strong> / <strong>Destination</strong>, or click roads to <strong>Close / Open</strong>!</span>
+        <span class="sm:hidden">Tap places to set <strong>Start/End</strong>, or tap roads to toggle.</span>
+      </span>
     </div>
-    <button type="button" id="btnDismissBanner" class="text-slate-400 hover:text-white text-base leading-none pl-2">&times;</button>
+    <button type="button" id="btnDismissBanner" class="text-slate-400 hover:text-white text-base leading-none pl-2 shrink-0">&times;</button>
   </div>
 
   <!-- Main Application Layout -->
-  <main class="relative z-10 flex h-[calc(100vh-64px-33px)] w-screen overflow-hidden" id="appLayout">
+  <main class="relative z-10 flex h-[calc(100vh-52px-32px)] h-[calc(100dvh-52px-32px)] sm:h-[calc(100vh-64px-32px)] w-screen overflow-hidden" id="appLayout">
     
     <!-- Collapsible Sidebar Panel -->
-    <aside id="sidebarPanel" class="w-[450px] shrink-0 bg-navy-900/90 backdrop-blur-2xl border-r border-white/10 flex flex-col overflow-hidden transition-all duration-300">
+    <aside id="sidebarPanel" class="w-[440px] shrink-0 bg-navy-900/90 backdrop-blur-2xl border-r border-white/10 flex flex-col overflow-hidden transition-all duration-300">
       
       <!-- Mobile Top Bar for Drawer (< 768px) -->
-      <div class="md:hidden flex items-center justify-between px-3 py-2 bg-navy-950 border-b border-white/10 shrink-0">
+      <div class="md:hidden flex items-center justify-between px-3.5 py-2.5 bg-navy-950 border-b border-white/10 shrink-0">
         <span class="text-xs font-heading font-bold text-white flex items-center gap-1.5">
-          <span>⚡</span> Route Planner
+          <span>🎯</span> Route Planner
         </span>
-        <button type="button" id="btnMobileCloseSidebar" class="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1">
+        <button type="button" id="btnMobileCloseSidebar" class="py-1 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 transition">
           <span>✕</span> <span>Close</span>
         </button>
       </div>
       
-      <!-- Sidebar Header -->
-      <div class="bg-navy-950/80 border-b border-white/10 p-3 shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-base">🎯</span>
-          <span class="font-heading font-bold text-sm text-white">Route Planner</span>
-        </div>
+      <!-- Desktop Sidebar Header -->
+      <div class="hidden md:flex bg-navy-950/80 border-b border-white/10 p-3 shrink-0 items-center gap-2">
+        <span class="text-base">🎯</span>
+        <span class="font-heading font-bold text-sm text-white">Route Planner</span>
       </div>
 
       <!-- Sidebar Body Content -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 sm:space-y-4 custom-scrollbar">
         
-        <!-- ROUTE PLANNER (only tab now) -->
-        <section id="tabPlanner" class="tab-pane active space-y-4">
+        <!-- ROUTE PLANNER -->
+        <section id="tabPlanner" class="tab-pane active space-y-3.5 sm:space-y-4">
           <!-- Submode Toggle: Single vs Multi-stop -->
-          <div class="flex bg-black/40 border border-white/10 rounded-xl p-1">
-            <button type="button" id="btnSubPointToPoint" class="segment-btn active flex-1 py-1.5 rounded-lg text-xs font-heading font-semibold transition text-slate-300">
-              📍 Single Route (A ➔ B)
+          <div class="flex bg-black/40 border border-white/10 rounded-xl p-1 gap-1">
+            <button type="button" id="btnSubPointToPoint" class="segment-btn active flex-1 py-1.5 rounded-lg text-xs font-heading font-semibold transition text-slate-300 text-center">
+              📍 Single (A ➔ B)
             </button>
-            <button type="button" id="btnSubMultiStop" class="segment-btn flex-1 py-1.5 rounded-lg text-xs font-heading font-semibold transition text-slate-300">
-              📦 Multi-Stop Tour (TSP)
+            <button type="button" id="btnSubMultiStop" class="segment-btn flex-1 py-1.5 rounded-lg text-xs font-heading font-semibold transition text-slate-300 text-center">
+              📦 Multi-Stop Tour
             </button>
           </div>
 
@@ -186,7 +195,7 @@
               <select id="selectDestination" class="hidden"></select>
             </div>
 
-            <button type="button" id="btnCalculateRoute" class="w-full py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-heading font-bold text-sm rounded-xl shadow-glow-cyan transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+            <button type="button" id="btnCalculateRoute" class="w-full py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-heading font-bold text-xs sm:text-sm rounded-xl shadow-glow-cyan transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 min-h-[42px]">
               <span>🚀</span> Calculate Shortest Route (Dijkstra)
             </button>
           </div>
@@ -211,7 +220,7 @@
                   <button type="button" id="btnClearAllStops" class="text-cyan-400 hover:underline">Clear</button>
                 </div>
               </div>
-              <div id="stopsCheckboxList" class="grid grid-cols-2 gap-2 p-2.5 bg-navy-950/70 border border-white/10 rounded-xl max-h-40 overflow-y-auto custom-scrollbar"></div>
+              <div id="stopsCheckboxList" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-navy-950/70 border border-white/10 rounded-xl max-h-40 overflow-y-auto custom-scrollbar"></div>
             </div>
 
             <div class="flex items-center gap-3 py-1">
@@ -222,45 +231,45 @@
               <span class="text-xs text-slate-300">Return to depot after all stops</span>
             </div>
 
-            <button type="button" id="btnCalculateMultiStop" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-heading font-bold text-sm rounded-xl shadow-glow-emerald transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+            <button type="button" id="btnCalculateMultiStop" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-heading font-bold text-xs sm:text-sm rounded-xl shadow-glow-emerald transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 min-h-[42px]">
               <span>⚡</span> Optimize Delivery Sequence
             </button>
           </div>
 
           <!-- ROUTE RESULT & TURN-BY-TURN CARD -->
-          <div id="routeResultCard" class="hidden bg-navy-850 border border-cyan-500/30 rounded-2xl p-4 shadow-card-dark space-y-3.5 animate-fadeIn">
+          <div id="routeResultCard" class="hidden bg-navy-850 border border-cyan-500/30 rounded-2xl p-3.5 sm:p-4 shadow-card-dark space-y-3.5 animate-fadeIn">
             <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span id="resultModeBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">DISTANCE</span>
-                <span class="font-heading font-bold text-white text-sm">Optimal Route Calculated</span>
+              <div class="flex items-center gap-2 min-w-0">
+                <span id="resultModeBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shrink-0">DISTANCE</span>
+                <span class="font-heading font-bold text-white text-xs sm:text-sm truncate">Optimal Route</span>
               </div>
-              <button type="button" id="btnCloseResult" class="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
+              <button type="button" id="btnCloseResult" class="text-slate-400 hover:text-white text-lg leading-none p-1 shrink-0">&times;</button>
             </div>
 
-            <!-- Big Stat KPIs (4 columns now with Total Cost) -->
-            <div class="grid grid-cols-4 bg-black/40 border border-white/10 rounded-xl p-2.5 text-center divide-x divide-white/10">
-              <div>
-                <div id="resTotalKm" class="font-mono text-base font-bold text-white">0.0</div>
-                <div class="text-[10px] text-slate-400 uppercase font-semibold">Kilometres</div>
+            <!-- Responsive Big Stat KPIs (2x2 on mobile, 4-col on tablet/desktop) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-black/40 border border-white/10 rounded-xl p-2.5 text-center">
+              <div class="p-1.5 rounded-lg bg-white/5">
+                <div id="resTotalKm" class="font-mono text-sm sm:text-base font-bold text-white">0.0</div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Kilometres</div>
               </div>
-              <div>
-                <div id="resTotalMin" class="font-mono text-base font-bold text-emerald-400">0m</div>
-                <div class="text-[10px] text-slate-400 uppercase font-semibold">Travel Time</div>
+              <div class="p-1.5 rounded-lg bg-white/5">
+                <div id="resTotalMin" class="font-mono text-sm sm:text-base font-bold text-emerald-400">0m</div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Travel Time</div>
               </div>
-              <div>
-                <div id="resLegsCount" class="font-mono text-base font-bold text-cyan-400">0</div>
-                <div class="text-[10px] text-slate-400 uppercase font-semibold">Road Legs</div>
+              <div class="p-1.5 rounded-lg bg-white/5">
+                <div id="resLegsCount" class="font-mono text-sm sm:text-base font-bold text-cyan-400">0</div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-semibold">Road Legs</div>
               </div>
-              <div>
-                <div id="resTotalCost" class="font-mono text-base font-bold text-amber-400">₹0</div>
-                <div class="text-[10px] text-slate-400 uppercase font-semibold">Total Cost</div>
+              <div class="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div id="resTotalCost" class="font-mono text-sm sm:text-base font-bold text-amber-400">₹0</div>
+                <div class="text-[9px] sm:text-[10px] text-amber-300 uppercase font-semibold">Total Cost</div>
               </div>
             </div>
 
             <!-- Turn-by-Turn Driving Directions -->
             <div>
               <div class="text-xs font-heading font-bold text-slate-300 mb-2">Turn-by-Turn Itinerary:</div>
-              <div id="resTurnTimeline" class="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar pr-1"></div>
+              <div id="resTurnTimeline" class="space-y-1.5 max-h-36 sm:max-h-44 overflow-y-auto custom-scrollbar pr-1"></div>
             </div>
           </div>
         </section>
@@ -271,35 +280,35 @@
     <section id="stagePanel" class="flex-1 relative bg-gradient-to-br from-navy-900 via-navy-950 to-black overflow-hidden">
       
       <!-- Floating Map Toolbar -->
-      <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-        <div class="flex items-center gap-2 pointer-events-auto">
-          <button type="button" id="btnToggleSidebar" class="h-8 px-3 bg-navy-900/90 hover:bg-navy-800 border border-white/10 rounded-lg text-xs font-heading font-semibold text-white shadow-lg backdrop-blur transition flex items-center gap-1.5" title="Toggle Sidebar">
-            ☰ Menu
+      <div class="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 z-20 flex items-center justify-between gap-2 pointer-events-none">
+        <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          <button type="button" id="btnToggleSidebar" class="h-8 px-2.5 sm:px-3 bg-navy-900/90 hover:bg-navy-800 border border-white/10 rounded-lg text-xs font-heading font-semibold text-white shadow-lg backdrop-blur transition flex items-center gap-1" title="Toggle Planner">
+            <span>☰</span><span class="hidden sm:inline"> Menu</span>
           </button>
           <div class="flex bg-navy-900/90 border border-white/10 rounded-lg overflow-hidden backdrop-blur shadow-lg">
             <button type="button" id="btnZoomIn" class="w-8 h-8 flex items-center justify-center text-sm font-bold text-white hover:bg-white/10 transition" title="Zoom in">+</button>
             <div class="w-[1px] bg-white/10"></div>
             <button type="button" id="btnZoomOut" class="w-8 h-8 flex items-center justify-center text-sm font-bold text-white hover:bg-white/10 transition" title="Zoom out">-</button>
           </div>
-          <button type="button" id="btnCenterNodes" class="h-8 px-3 bg-navy-900/90 hover:bg-navy-800 border border-white/10 rounded-lg text-xs font-heading font-semibold text-white shadow-lg backdrop-blur transition" title="Fit whole city into screen">
-            ⊡ Fit Map
+          <button type="button" id="btnCenterNodes" class="h-8 px-2.5 sm:px-3 bg-navy-900/90 hover:bg-navy-800 border border-white/10 rounded-lg text-xs font-heading font-semibold text-white shadow-lg backdrop-blur transition" title="Fit whole city into screen">
+            <span>⊡</span><span class="hidden sm:inline"> Fit Map</span><span class="sm:hidden"> Fit</span>
           </button>
         </div>
 
-        <!-- Animated Vehicle HUD Controller (no speed controls) -->
-        <div id="mapAnimControls" class="hidden pointer-events-auto flex items-center gap-2.5 bg-navy-900/90 border border-white/10 rounded-full px-3.5 py-1 backdrop-blur-xl shadow-lg">
+        <!-- Animated Vehicle HUD Controller (responsive position) -->
+        <div id="mapAnimControls" class="hidden pointer-events-auto flex items-center gap-2 bg-navy-900/90 border border-white/10 rounded-full px-3 py-1 backdrop-blur-xl shadow-lg">
           <button type="button" id="btnToggleAnim" class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 flex items-center justify-center text-xs font-bold transition">⏸</button>
-          <div class="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div class="w-20 sm:w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div id="animScrubberFill" class="w-0 h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-100"></div>
           </div>
         </div>
 
-        <!-- Legend Overlay -->
-        <div class="hidden md:flex items-center gap-3 bg-navy-900/90 border border-white/10 rounded-full px-4 py-1.5 backdrop-blur-xl shadow-lg text-xs text-slate-300 pointer-events-auto">
+        <!-- Legend Overlay (Desktop / Tablet) -->
+        <div class="hidden md:flex items-center gap-3 bg-navy-900/90 border border-white/10 rounded-full px-3.5 py-1.5 backdrop-blur-xl shadow-lg text-xs text-slate-300 pointer-events-auto shrink-0">
           <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]"></span> Depot</div>
           <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span> Customer</div>
           <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_6px_#8b5cf6]"></span> Landmark</div>
-          <div class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-cyan-400"></span> Open Road</div>
+          <div class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-cyan-400"></span> Open</div>
           <div class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-rose-500 border-t border-dashed border-white"></span> Closed</div>
         </div>
       </div>
@@ -309,20 +318,20 @@
         <canvas id="networkCanvas" class="absolute inset-0 w-full h-full block"></canvas>
 
         <!-- Floating On-Map Node Action Popup -->
-        <div id="nodeContextPopup" class="hidden absolute z-50 w-64 bg-navy-900/95 border border-cyan-400/40 rounded-2xl p-3 shadow-2xl backdrop-blur-xl animate-fadeIn pointer-events-auto">
+        <div id="nodeContextPopup" class="hidden absolute z-50 w-64 max-w-[calc(100vw-32px)] bg-navy-900/95 border border-cyan-400/40 rounded-2xl p-3 shadow-2xl backdrop-blur-xl animate-fadeIn pointer-events-auto">
           <div class="flex items-center gap-2 pb-2 mb-2 border-b border-white/10">
             <span id="popupIcon" class="text-xl">🏢</span>
             <div class="flex-1 min-w-0">
               <div id="popupName" class="font-heading font-bold text-sm text-white truncate">Warehouse</div>
               <div id="popupType" class="text-[10px] font-mono font-semibold text-cyan-400">WAREHOUSE</div>
             </div>
-            <button type="button" id="btnClosePopup" class="text-slate-400 hover:text-white text-base leading-none">&times;</button>
+            <button type="button" id="btnClosePopup" class="text-slate-400 hover:text-white text-base leading-none p-1">&times;</button>
           </div>
           <div id="popupConnections" class="text-xs text-slate-300 mb-2.5 max-h-20 overflow-y-auto custom-scrollbar leading-relaxed"></div>
           <div class="grid grid-cols-2 gap-1.5">
-            <button type="button" id="btnPopupSetStart" class="py-1 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-heading font-semibold transition">🚩 Start Here</button>
-            <button type="button" id="btnPopupSetEnd" class="py-1 px-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-heading font-semibold transition">🏁 End Here</button>
-            <button type="button" id="btnPopupAddStop" class="col-span-2 py-1 px-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-xs font-heading font-semibold transition">➕ Add as Delivery Stop</button>
+            <button type="button" id="btnPopupSetStart" class="py-1 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-heading font-semibold transition min-h-[32px]">🚩 Start Here</button>
+            <button type="button" id="btnPopupSetEnd" class="py-1 px-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-heading font-semibold transition min-h-[32px]">🏁 End Here</button>
+            <button type="button" id="btnPopupAddStop" class="col-span-2 py-1 px-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-xs font-heading font-semibold transition min-h-[32px]">➕ Add as Delivery Stop</button>
           </div>
         </div>
       </div>
@@ -338,26 +347,26 @@
   </main>
 
   <!-- Floating Mobile View Switcher (Visible only on < 768px screens) -->
-  <div id="mobileNavBar" class="hidden mobile-view-bar fixed bottom-3 left-1/2 -translate-x-1/2 z-40 items-center gap-1 bg-navy-900/95 border border-cyan-400/40 rounded-full p-1.5 shadow-2xl backdrop-blur-xl pointer-events-auto">
+  <div id="mobileNavBar" class="hidden mobile-view-bar fixed bottom-3 left-1/2 -translate-x-1/2 z-40 items-center gap-1.5 bg-navy-900/95 border border-cyan-400/40 rounded-full p-1.5 shadow-2xl backdrop-blur-xl pointer-events-auto">
     <button type="button" id="btnMobileMap" class="mobile-nav-btn active px-4 py-1.5 rounded-full text-xs font-heading font-bold flex items-center gap-1.5 transition">
       <span>🗺️</span> <span>City Map</span>
     </button>
     <button type="button" id="btnMobileControls" class="mobile-nav-btn px-4 py-1.5 rounded-full text-xs font-heading font-bold flex items-center gap-1.5 transition">
-      <span>📋</span> <span>Controls</span>
+      <span>📋</span> <span>Planner</span>
     </button>
   </div>
 
   <!-- ADS Architecture & Engine Modal -->
   <div id="oracleModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-[92vw] max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
-      <div class="p-4 border-b border-white/10 flex items-center justify-between">
+    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-[94vw] max-h-[88vh] max-h-[88dvh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
+      <div class="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-xl">⚡</span>
-          <h3 class="font-heading font-bold text-base text-white">Advanced Data Structures (ADS) Engine</h3>
+          <h3 class="font-heading font-bold text-sm sm:text-base text-white">Advanced Data Structures (ADS) Engine</h3>
         </div>
-        <button type="button" id="btnCloseOracleModal" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+        <button type="button" id="btnCloseOracleModal" class="text-slate-400 hover:text-white text-xl leading-none p-1">&times;</button>
       </div>
-      <div class="p-5 space-y-3.5 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
+      <div class="p-4 sm:p-5 space-y-3.5 text-xs text-slate-300 overflow-y-auto custom-scrollbar">
         <div class="p-3 bg-navy-950 border border-white/10 rounded-xl space-y-1">
           <div class="font-semibold text-white flex items-center justify-between">
             <span>Engine Runtime Status:</span>
@@ -404,7 +413,7 @@
           <strong>Zero Database Overhead:</strong> The system operates purely in RAM using high-performance C++ data structures for instant 0ms responses without any external database dependency.
         </div>
       </div>
-      <div class="p-4 border-t border-white/10 flex justify-end">
+      <div class="p-3.5 sm:p-4 border-t border-white/10 flex justify-end">
         <button type="button" id="btnDismissOracleModal" class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-xs rounded-xl transition">
           Got It
         </button>
@@ -414,12 +423,12 @@
 
   <!-- Docs & Architecture Modal -->
   <div id="docsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-[92vw] max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
-      <div class="p-4 border-b border-white/10 flex items-center justify-between">
-        <h3 class="font-heading font-bold text-base text-white">System Architecture: Pure C++14 ADS Engine</h3>
-        <button type="button" id="btnCloseDocs" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+    <div class="bg-navy-900 border border-white/15 rounded-2xl max-w-lg w-[94vw] max-h-[88vh] max-h-[88dvh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
+      <div class="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between">
+        <h3 class="font-heading font-bold text-sm sm:text-base text-white">System Architecture: Pure C++14 ADS Engine</h3>
+        <button type="button" id="btnCloseDocs" class="text-slate-400 hover:text-white text-xl leading-none p-1">&times;</button>
       </div>
-      <div class="p-5 space-y-3 text-xs text-slate-300 max-h-[70vh] overflow-y-auto custom-scrollbar leading-relaxed">
+      <div class="p-4 sm:p-5 space-y-3 text-xs text-slate-300 max-h-[70vh] overflow-y-auto custom-scrollbar leading-relaxed">
         <h4 class="font-heading font-bold text-cyan-400 text-sm">1. Graph ADS Core & Dijkstra Algorithm</h4>
         <p>The city map is represented purely in memory as an adjacency list <code>std::vector&lt;std::vector&lt;Edge&gt;&gt;</code>. Dijkstra's shortest path runs in $O((V+E)\log V)$ using a binary min-heap (<code>std::priority_queue</code>). Multi-stop delivery plans optimal TSP customer visits using greedy nearest-neighbor with Dijkstra legs.</p>
 
@@ -432,7 +441,7 @@
           <li><strong>Native Winsock Web Server:</strong> An embedded multithreaded C++ HTTP server delivers static assets and REST API endpoints directly on localhost.</li>
         </ul>
       </div>
-      <div class="p-4 border-t border-white/10 flex justify-end">
+      <div class="p-3.5 sm:p-4 border-t border-white/10 flex justify-end">
         <button type="button" id="btnDismissDocs" class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-xs rounded-xl transition">
           Close
         </button>

@@ -112,7 +112,21 @@ const canvasViewport = document.getElementById('canvasViewport');
 // ----------------------------------------------------------------------------
 window.addEventListener('DOMContentLoaded', async () => {
   setupCanvasDimensions();
-  window.addEventListener('resize', setupCanvasDimensions);
+  
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      setupCanvasDimensions();
+    }, 100);
+  });
+
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      setupCanvasDimensions();
+      autoFitGraph();
+    }, 200);
+  });
 
   initEventListeners();
   initCanvasInteractions();
@@ -132,7 +146,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function setupCanvasDimensions() {
   const rect = canvasViewport.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
+  if (rect.width === 0 || rect.height === 0) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = Math.round(rect.width * dpr);
   canvas.height = Math.round(rect.height * dpr);
   canvas.style.width = `${rect.width}px`;
@@ -629,9 +644,25 @@ function showNodePopup(node) {
     }).join('<br>');
   document.getElementById('popupConnections').innerHTML = connHtml;
 
-  popup.style.left = `${Math.min(Math.max(screenX - 130, 10), canvasViewport.clientWidth - 280)}px`;
-  popup.style.top = `${Math.max(screenY - 180, 10)}px`;
+  popup.style.visibility = 'hidden';
   popup.classList.remove('hidden');
+
+  const popupW = Math.min(270, window.innerWidth - 32);
+  const popupH = popup.offsetHeight || 170;
+  let px = screenX - popupW / 2;
+  let py = screenY - popupH - 16;
+
+  // Horizontal clamping within viewport
+  px = Math.max(12, Math.min(px, canvasViewport.clientWidth - popupW - 12));
+
+  // Vertical clamping: if too close to top, show below node
+  if (py < 56) {
+    py = Math.min(screenY + 24, canvasViewport.clientHeight - popupH - 16);
+  }
+
+  popup.style.left = `${Math.round(px)}px`;
+  popup.style.top = `${Math.round(py)}px`;
+  popup.style.visibility = 'visible';
 }
 
 function hideNodePopup() {
