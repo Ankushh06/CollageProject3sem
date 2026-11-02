@@ -1,20 +1,26 @@
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  RouteFlow: Delivery Route Optimization System (Java + Web)" -ForegroundColor Cyan
-Write-Host "  Databases supported: Oracle Database & SQLite (Auto-detect)" -ForegroundColor DarkCyan
+Write-Host "  RouteFlow: Delivery Route Optimization System (C++ ADS Engine)" -ForegroundColor Cyan
+Write-Host "  Data Structures: Graph (Adjacency List) + Min-Heap Priority Queue" -ForegroundColor DarkCyan
+Write-Host "  Algorithm: Dijkstra Shortest Path O((V + E) log V) & TSP Planner" -ForegroundColor DarkCyan
 Write-Host "============================================================" -ForegroundColor Cyan
 
-if (!(Test-Path "bin")) {
-    New-Item -ItemType Directory -Path "bin" | Out-Null
+$cppFiles = Get-ChildItem -Path "src" -Filter "*.cpp"
+if (-not $cppFiles) {
+    Write-Host "No C++ source files found in src/" -ForegroundColor Red
+    exit 1
 }
 
-Write-Host "Compiling Java sources..." -ForegroundColor Yellow
-javac -cp "sqlite-jdbc.jar;ojdbc11.jar" -d bin src/delivery/*.java
+Write-Host "Compiling C++ ADS Engine with g++..." -ForegroundColor Yellow
+g++ -std=c++14 -O2 src/main.cpp -o routeflow.exe -lws2_32
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Compilation failed with error code $LASTEXITCODE" -ForegroundColor Red
+    Write-Host "C++ compilation failed with error code $LASTEXITCODE" -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
-Write-Host "Starting RouteFlow Server..." -ForegroundColor Green
-Write-Host "Access the Web UI at: http://localhost:8080" -ForegroundColor Cyan
-java -cp "bin;sqlite-jdbc.jar;ojdbc11.jar" delivery.Main $args
+Write-Host "Compilation successful: routeflow.exe ready." -ForegroundColor Green
+Write-Host "Starting RouteFlow C++ Server..." -ForegroundColor Green
+Write-Host "Web UI available at: http://localhost:8080" -ForegroundColor Cyan
+
+Start-Process "http://localhost:8080"
+.\routeflow.exe $args

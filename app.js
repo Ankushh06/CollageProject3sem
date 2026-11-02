@@ -1,7 +1,9 @@
 /**
- * RouteFlow - User-Friendly Delivery Route Optimization System
- * Real-time Dijkstra Algorithm + Dual Oracle / SQLite DBMS + Vercel Serverless Ready
+ * RouteFlow - Simplified Route Optimization System
+ * Pure C++14 ADS Engine + Dijkstra Algorithm + Canvas Map
  */
+
+const COST_PER_KM = 10; // ₹10 per km
 
 const FALLBACK_LOCATIONS = [
   { id: 0, name: 'Warehouse', type: 'WAREHOUSE', x: 160, y: 240 },
@@ -67,18 +69,6 @@ const FALLBACK_ROADS = [
   { roadId: 40, locA: 'Eco Park', locB: 'Tech Park', distanceKm: 5.0, travelTimeMin: 12.0, isActive: true }
 ];
 
-const FALLBACK_DRIVERS = [
-  { id: 1, name: 'Ravi Kumar', phone: '9876500001' },
-  { id: 2, name: 'Amit Singh', phone: '9876500002' },
-  { id: 3, name: 'Neha Sharma', phone: '9876500003' }
-];
-
-const FALLBACK_VEHICLES = [
-  { id: 1, regNo: 'PB-01-AA-1001', type: 'VAN', capacityKg: 800 },
-  { id: 2, regNo: 'PB-01-AA-1002', type: 'BIKE', capacityKg: 40 },
-  { id: 3, regNo: 'PB-01-AA-1003', type: 'TRUCK', capacityKg: 3000 }
-];
-
 const state = {
   network: {
     criterion: 'DISTANCE',
@@ -91,11 +81,7 @@ const state = {
   selectedDestination: null,
   selectedDepot: null,
   currentRoute: null,
-  activeTab: 'tabPlanner',
   activePlannerSubmode: 'pointToPoint',
-  activeReport: 'repTrips',
-  drivers: JSON.parse(JSON.stringify(FALLBACK_DRIVERS)),
-  vehicles: JSON.parse(JSON.stringify(FALLBACK_VEHICLES)),
   // Canvas Viewport
   viewport: {
     x: 40,
@@ -103,8 +89,6 @@ const state = {
     zoom: 1.0,
     isPanning: false,
     panStart: { x: 0, y: 0 },
-    draggedNode: null,
-    dragOffset: { x: 0, y: 0 },
     hoveredNode: null,
     hoveredRoad: null,
     activePopupNode: null
@@ -134,8 +118,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   initCanvasInteractions();
 
   await fetchNetwork();
-  await loadFleetSelectors();
-  await refreshActiveReport();
   await fetchDatabaseInfo();
 
   // Set default sensible selections
@@ -208,23 +190,7 @@ async function fetchNetwork() {
 
   renderLocationChips();
   populateStopsCheckboxes();
-  populateRoadClosureList();
-  populateRoadFormDropdowns();
   requestRender();
-}
-
-async function loadFleetSelectors() {
-  const [drivers, vehicles] = await Promise.all([
-    apiGet('/api/drivers'),
-    apiGet('/api/vehicles')
-  ]);
-  state.drivers = (drivers && drivers.length > 0) ? drivers : JSON.parse(JSON.stringify(FALLBACK_DRIVERS));
-  populateDriversTable(state.drivers);
-  populateDriverSelect(state.drivers);
-
-  state.vehicles = (vehicles && vehicles.length > 0) ? vehicles : JSON.parse(JSON.stringify(FALLBACK_VEHICLES));
-  populateVehiclesTable(state.vehicles);
-  populateVehicleSelect(state.vehicles);
 }
 
 // ----------------------------------------------------------------------------
@@ -315,52 +281,6 @@ function populateStopsCheckboxes() {
   });
 }
 
-function populateRoadFormDropdowns() {
-  const locs = state.network.locations || [];
-  const roadFrom = document.getElementById('roadFromSelect');
-  const roadTo = document.getElementById('roadToSelect');
-  const opts = locs.map(l => `<option value="${escapeHtml(l.name)}">${escapeHtml(l.name)}</option>`).join('');
-  roadFrom.innerHTML = opts;
-  roadTo.innerHTML = opts;
-  if (locs.length > 1) roadTo.selectedIndex = 1;
-}
-
-function populateRoadClosureList() {
-  const list = document.getElementById('roadClosureList');
-  const roads = state.network.roads || [];
-
-  if (roads.length === 0) {
-    list.innerHTML = '<div class="subtext">No roads recorded.</div>';
-    return;
-  }
-
-  list.innerHTML = roads.map(r => {
-    const isClosed = !r.isActive;
-    return `
-      <div class="road-closure-item ${isClosed ? 'is-closed' : ''}">
-        <div class="road-closure-info">
-          <div class="road-closure-name">${escapeHtml(r.locA)} ⟷ ${escapeHtml(r.locB)}</div>
-          <div class="road-closure-stats">${r.distanceKm.toFixed(1)} km • ${r.travelTimeMin.toFixed(0)} min</div>
-        </div>
-        <button type="button" class="btn-toggle-road ${isClosed ? 'btn-closed' : 'btn-open'}"
-                data-from="${escapeHtml(r.locA)}" data-to="${escapeHtml(r.locB)}" data-active="${!isClosed}">
-          ${isClosed ? '⛔ Closed (Click to Reopen)' : '✓ Open (Click to Close)'}
-        </button>
-      </div>
-    `;
-  }).join('');
-
-  list.querySelectorAll('.btn-toggle-road').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const from = btn.getAttribute('data-from');
-      const to = btn.getAttribute('data-to');
-      const active = btn.getAttribute('data-active') === 'true';
-      await toggleRoadState(from, to, !active);
-    });
-  });
-}
-
 async function toggleRoadState(from, to, newActiveState) {
   const res = await apiPost('/api/roads/toggle', { from, to, active: newActiveState });
   if (res && res.success) {
@@ -373,32 +293,6 @@ async function toggleRoadState(from, to, newActiveState) {
       else calculateMultiStop();
     }
   }
-}
-
-function populateDriversTable(drivers) {
-  const tbody = document.getElementById('driverRosterBody');
-  tbody.innerHTML = (!drivers || drivers.length === 0) ?
-    '<tr><td colspan="3" class="subtext">No drivers registered</td></tr>' :
-    drivers.map(d => `<tr><td><code>#${d.id}</code></td><td><strong>${escapeHtml(d.name)}</strong></td><td>${escapeHtml(d.phone)}</td></tr>`).join('');
-}
-
-function populateVehiclesTable(vehicles) {
-  const tbody = document.getElementById('vehicleRosterBody');
-  tbody.innerHTML = (!vehicles || vehicles.length === 0) ?
-    '<tr><td colspan="4" class="subtext">No vehicles registered</td></tr>' :
-    vehicles.map(v => `<tr><td><code>#${v.id}</code></td><td><strong>${escapeHtml(v.regNo)}</strong></td><td><span class="label-badge start-badge">${escapeHtml(v.type)}</span></td><td>${v.capacityKg} kg</td></tr>`).join('');
-}
-
-function populateDriverSelect(drivers) {
-  const sel = document.getElementById('selectTripDriver');
-  sel.innerHTML = '<option value="">0 - Unassigned</option>' +
-    drivers.map(d => `<option value="${d.id}">#${d.id} - ${escapeHtml(d.name)}</option>`).join('');
-}
-
-function populateVehicleSelect(vehicles) {
-  const sel = document.getElementById('selectTripVehicle');
-  sel.innerHTML = '<option value="">0 - Unassigned</option>' +
-    vehicles.map(v => `<option value="${v.id}">#${v.id} - ${escapeHtml(v.regNo)} (${v.type})</option>`).join('');
 }
 
 // ----------------------------------------------------------------------------
@@ -425,7 +319,7 @@ async function calculatePointToPoint() {
   });
 
   if (!res || !res.valid) {
-    // Client-side Dijkstra fallback for Vercel
+    // Client-side Dijkstra fallback
     res = clientDijkstra(source, destination, state.network.criterion);
   }
 
@@ -464,7 +358,7 @@ async function calculateMultiStop() {
   });
 
   if (!res || !res.valid) {
-    // Client-side TSP fallback for Vercel
+    // Client-side TSP fallback
     res = clientPlanTSP(depot, stops, returnToDepot, state.network.criterion);
   }
 
@@ -483,7 +377,7 @@ async function calculateMultiStop() {
 }
 
 // ----------------------------------------------------------------------------
-//  CLIENT-SIDE DIJKSTRA & TSP GRAPH ENGINE (Vercel / Offline Fallback)
+//  CLIENT-SIDE DIJKSTRA & TSP GRAPH ENGINE (Fallback)
 // ----------------------------------------------------------------------------
 function clientDijkstra(srcName, dstName, criterion = 'DISTANCE') {
   const isTime = (criterion === 'TIME');
@@ -666,6 +560,10 @@ function displayRouteResult(routeData) {
   document.getElementById('resTotalMin').textContent = routeData.minutes.toFixed(0) + 'm';
   document.getElementById('resLegsCount').textContent = routeData.legs ? routeData.legs.length : (routeData.fullRoute.length - 1);
 
+  // Total Cost calculation
+  const totalCost = Math.round(routeData.km * COST_PER_KM);
+  document.getElementById('resTotalCost').textContent = '₹' + totalCost;
+
   // Turn-by-Turn Timeline
   const timeline = document.getElementById('resTurnTimeline');
   let timelineHtml = '';
@@ -695,8 +593,6 @@ function displayRouteResult(routeData) {
     });
   }
   timeline.innerHTML = timelineHtml;
-
-  document.getElementById('saveTripFeedback').classList.add('hidden');
   requestRender();
 }
 
@@ -706,72 +602,6 @@ function clearRouteResult() {
   stopRouteAnimation();
   updateHudText('Route cleared. Click any node to plan a new route.');
   requestRender();
-}
-
-async function saveTripToDatabase() {
-  if (!state.currentRoute || !state.currentRoute.valid) return;
-  const driverId = parseInt(document.getElementById('selectTripDriver').value) || null;
-  const vehicleId = parseInt(document.getElementById('selectTripVehicle').value) || null;
-  const stops = state.currentRoute.order || [state.currentRoute.destination];
-
-  const payload = {
-    depot: state.currentRoute.depot,
-    stops: stops,
-    criterion: state.network.criterion,
-    km: state.currentRoute.km,
-    minutes: state.currentRoute.minutes,
-    routeText: state.currentRoute.routeText,
-    driverId: driverId,
-    vehicleId: vehicleId
-  };
-
-  const res = await apiPost('/api/trips', payload);
-  const feedback = document.getElementById('saveTripFeedback');
-  if (res && res.success) {
-    feedback.className = 'save-feedback success';
-    feedback.innerHTML = `✓ Trip #<strong>${res.tripId}</strong> committed to SQLite (view in Trip Logs)!`;
-    feedback.classList.remove('hidden');
-    showToast(`Trip #${res.tripId} saved to database`, 'success');
-  } else {
-    feedback.className = 'save-feedback error';
-    feedback.textContent = 'Could not save trip.';
-    feedback.classList.remove('hidden');
-  }
-}
-
-// ----------------------------------------------------------------------------
-//  1-CLICK DEMO SCENARIOS
-// ----------------------------------------------------------------------------
-function runDemoPointToPoint() {
-  // Switch to Point-to-Point tab
-  document.getElementById('btnSubPointToPoint').click();
-  setStartLocation('Warehouse');
-  setEndLocation('Airport');
-  calculatePointToPoint();
-  autoFitGraph();
-}
-
-function runDemoMultiStop() {
-  document.getElementById('btnSubMultiStop').click();
-  setDepotLocation('Warehouse');
-  // Check 4 stops
-  const targets = ['Market', 'Hospital', 'Mall', 'Tech Park'];
-  document.querySelectorAll('input[name="deliveryStop"]').forEach(c => {
-    c.checked = targets.includes(c.value);
-    c.closest('.stop-toggle-card').classList.toggle('checked', c.checked);
-  });
-  calculateMultiStop();
-  autoFitGraph();
-}
-
-async function runDemoClosure() {
-  document.getElementById('btnSubPointToPoint').click();
-  setStartLocation('Warehouse');
-  setEndLocation('Airport');
-  // Close the road Warehouse <-> Market
-  await toggleRoadState('Warehouse', 'Market', false);
-  calculatePointToPoint();
-  showToast('Road closed! Notice Dijkstra took the Hospital detour.', 'info');
 }
 
 // ----------------------------------------------------------------------------
@@ -828,14 +658,10 @@ function renderCanvas() {
   const dpr = window.devicePixelRatio || 1;
 
   ctx.save();
-  // Reset transform to identity and clear the entire backing store
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Scale by DPR so 1 canvas unit = 1 CSS pixel
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  // Pan and zoom in CSS pixel space
   ctx.translate(state.viewport.x, state.viewport.y);
   ctx.scale(state.viewport.zoom, state.viewport.zoom);
 
@@ -1134,7 +960,7 @@ function startAnimationLoop() {
 }
 
 // ----------------------------------------------------------------------------
-//  CANVAS MOUSE & INTERACTION HANDLING
+//  CANVAS MOUSE & INTERACTION HANDLING (No node dragging)
 // ----------------------------------------------------------------------------
 function initCanvasInteractions() {
   canvasViewport.addEventListener('mousedown', onMouseDown);
@@ -1177,7 +1003,6 @@ function findRoadAt(wx, wy) {
   const locs = state.network.locations || [];
   let bestRoad = null;
   let bestDist = Infinity;
-  // Screen pixel tolerance converted to world units
   const maxWorldDist = 14 / state.viewport.zoom;
 
   for (const r of roads) {
@@ -1185,7 +1010,6 @@ function findRoadAt(wx, wy) {
     const b = locs.find(l => l.name === r.locB);
     if (!a || !b) continue;
 
-    // Check if clicking directly on the road's middle info badge
     const midX = (a.x + b.x) / 2;
     const midY = (a.y + b.y) / 2;
     const badgeHalfW = 46 / state.viewport.zoom;
@@ -1194,7 +1018,6 @@ function findRoadAt(wx, wy) {
       return r;
     }
 
-    // Point-to-segment distance to road line
     const dist = distToSegment(wx, wy, a.x, a.y, b.x, b.y);
     if (dist <= maxWorldDist && dist < bestDist) {
       bestDist = dist;
@@ -1213,7 +1036,6 @@ function distToSegment(px, py, x1, y1, x2, y2) {
 }
 
 let pointerDownScreen = null;
-let isActuallyDraggingNode = false;
 let isActuallyPanning = false;
 
 // Touch State
@@ -1223,19 +1045,11 @@ let touchStartPos = null;
 function onMouseDown(e) {
   if (e.button !== 0) return;
   pointerDownScreen = { x: e.clientX, y: e.clientY };
-  isActuallyDraggingNode = false;
   isActuallyPanning = false;
 
-  const pos = screenToWorld(e.clientX, e.clientY);
-  const clickedNode = findNodeAt(pos.x, pos.y);
-
-  if (clickedNode) {
-    state.viewport.draggedNode = clickedNode;
-    state.viewport.dragOffset = { x: clickedNode.x - pos.x, y: clickedNode.y - pos.y };
-  } else {
-    state.viewport.isPanning = true;
-    state.viewport.panStart = { x: e.clientX - state.viewport.x, y: e.clientY - state.viewport.y };
-  }
+  // Only panning, no node dragging
+  state.viewport.isPanning = true;
+  state.viewport.panStart = { x: e.clientX - state.viewport.x, y: e.clientY - state.viewport.y };
 }
 
 function onMouseMove(e) {
@@ -1243,20 +1057,9 @@ function onMouseMove(e) {
 
   if (pointerDownScreen) {
     const dist = Math.hypot(e.clientX - pointerDownScreen.x, e.clientY - pointerDownScreen.y);
-    if (dist > 4) {
-      if (state.viewport.draggedNode) {
-        isActuallyDraggingNode = true;
-      } else if (state.viewport.isPanning) {
-        isActuallyPanning = true;
-      }
+    if (dist > 4 && state.viewport.isPanning) {
+      isActuallyPanning = true;
     }
-  }
-
-  if (state.viewport.draggedNode && isActuallyDraggingNode) {
-    state.viewport.draggedNode.x = Math.round(pos.x + state.viewport.dragOffset.x);
-    state.viewport.draggedNode.y = Math.round(pos.y + state.viewport.dragOffset.y);
-    requestRender();
-    return;
   }
 
   if (state.viewport.isPanning && isActuallyPanning) {
@@ -1279,25 +1082,16 @@ function onMouseMove(e) {
     state.viewport.hoveredRoad = hoveredRoad;
     needRender = true;
   }
-  canvasViewport.style.cursor = hoveredNode ? 'pointer' : hoveredRoad ? 'pointer' : 'grab';
+  canvasViewport.style.cursor = hoveredNode ? 'pointer' : hoveredRoad ? 'pointer' : 'default';
   if (needRender) requestRender();
 }
 
 async function onMouseUp(e) {
-  const wasDragging = isActuallyDraggingNode;
   const wasPanning = isActuallyPanning;
-  const dragged = state.viewport.draggedNode;
 
   pointerDownScreen = null;
-  state.viewport.draggedNode = null;
   state.viewport.isPanning = false;
-  isActuallyDraggingNode = false;
   isActuallyPanning = false;
-
-  if (dragged && wasDragging) {
-    await apiPost('/api/locations/coords', { id: dragged.id, x: dragged.x, y: dragged.y });
-    return;
-  }
 
   if (wasPanning) return;
 
@@ -1309,7 +1103,7 @@ async function onMouseUp(e) {
     return;
   }
 
-  // Check if user clicked a road to toggle its open/closed status!
+  // Check if user clicked a road to toggle its open/closed status
   const clickedRoad = findRoadAt(pos.x, pos.y);
   if (clickedRoad) {
     await toggleRoadState(clickedRoad.locA, clickedRoad.locB, !clickedRoad.isActive);
@@ -1318,30 +1112,19 @@ async function onMouseUp(e) {
 }
 
 // ----------------------------------------------------------------------------
-//  TOUCH GESTURES FOR MOBILE & TABLETS (Pan, Pinch-to-Zoom, Tap)
+//  TOUCH GESTURES FOR MOBILE & TABLETS (Pan, Pinch-to-Zoom, Tap — No Dragging)
 // ----------------------------------------------------------------------------
 function onTouchStart(e) {
   if (e.touches.length === 1) {
     const t = e.touches[0];
     pointerDownScreen = { x: t.clientX, y: t.clientY };
     touchStartPos = { x: t.clientX, y: t.clientY };
-    isActuallyDraggingNode = false;
     isActuallyPanning = false;
 
-    const pos = screenToWorld(t.clientX, t.clientY);
-    const clickedNode = findNodeAt(pos.x, pos.y);
-
-    if (clickedNode) {
-      state.viewport.draggedNode = clickedNode;
-      state.viewport.dragOffset = { x: clickedNode.x - pos.x, y: clickedNode.y - pos.y };
-    } else {
-      state.viewport.isPanning = true;
-      state.viewport.panStart = { x: t.clientX - state.viewport.x, y: t.clientY - state.viewport.y };
-    }
+    state.viewport.isPanning = true;
+    state.viewport.panStart = { x: t.clientX - state.viewport.x, y: t.clientY - state.viewport.y };
   } else if (e.touches.length === 2) {
     state.viewport.isPanning = false;
-    state.viewport.draggedNode = null;
-    isActuallyDraggingNode = false;
     isActuallyPanning = false;
     const t1 = e.touches[0];
     const t2 = e.touches[1];
@@ -1352,25 +1135,12 @@ function onTouchStart(e) {
 function onTouchMove(e) {
   if (e.touches.length === 1) {
     const t = e.touches[0];
-    const pos = screenToWorld(t.clientX, t.clientY);
 
     if (pointerDownScreen) {
       const dist = Math.hypot(t.clientX - pointerDownScreen.x, t.clientY - pointerDownScreen.y);
-      if (dist > 8) {
-        if (state.viewport.draggedNode) {
-          isActuallyDraggingNode = true;
-        } else if (state.viewport.isPanning) {
-          isActuallyPanning = true;
-        }
+      if (dist > 8 && state.viewport.isPanning) {
+        isActuallyPanning = true;
       }
-    }
-
-    if (state.viewport.draggedNode && isActuallyDraggingNode) {
-      if (e.cancelable) e.preventDefault();
-      state.viewport.draggedNode.x = Math.round(pos.x + state.viewport.dragOffset.x);
-      state.viewport.draggedNode.y = Math.round(pos.y + state.viewport.dragOffset.y);
-      requestRender();
-      return;
     }
 
     if (state.viewport.isPanning && isActuallyPanning) {
@@ -1404,23 +1174,14 @@ function onTouchMove(e) {
 
 async function onTouchEnd(e) {
   if (e.touches.length === 0) {
-    const wasDragging = isActuallyDraggingNode;
     const wasPanning = isActuallyPanning;
-    const dragged = state.viewport.draggedNode;
     const startPoint = touchStartPos;
 
     pointerDownScreen = null;
     touchStartPos = null;
     touchPinchDist = null;
-    state.viewport.draggedNode = null;
     state.viewport.isPanning = false;
-    isActuallyDraggingNode = false;
     isActuallyPanning = false;
-
-    if (dragged && wasDragging) {
-      await apiPost('/api/locations/coords', { id: dragged.id, x: dragged.x, y: dragged.y });
-      return;
-    }
 
     if (wasPanning || !startPoint) return;
 
@@ -1485,12 +1246,6 @@ function autoFitGraph() {
 //  EVENT LISTENERS & BINDINGS
 // ----------------------------------------------------------------------------
 function initEventListeners() {
-  // 1-Click Demos
-  document.getElementById('demoPointToPoint').addEventListener('click', runDemoPointToPoint);
-  document.getElementById('demoMultiStop').addEventListener('click', runDemoMultiStop);
-  document.getElementById('demoClosure').addEventListener('click', runDemoClosure);
-  document.getElementById('demoReset').addEventListener('click', clearRouteResult);
-
   // Helper banner dismiss
   document.getElementById('btnDismissBanner').addEventListener('click', () => {
     document.getElementById('helperBanner').classList.add('hidden');
@@ -1554,7 +1309,6 @@ function initEventListeners() {
   document.getElementById('btnCalculateRoute').addEventListener('click', calculatePointToPoint);
   document.getElementById('btnCalculateMultiStop').addEventListener('click', calculateMultiStop);
   document.getElementById('btnCloseResult').addEventListener('click', clearRouteResult);
-  document.getElementById('btnSaveTrip').addEventListener('click', saveTripToDatabase);
 
   // Multi-stop helpers
   document.getElementById('btnSelectAllStops').addEventListener('click', () => {
@@ -1586,26 +1340,6 @@ function initEventListeners() {
     state.activePlannerSubmode = 'multiStop';
   });
 
-  // Tabs switcher
-  document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => {
-        p.classList.remove('active');
-        p.style.display = 'none';
-      });
-      tab.classList.add('active');
-      const target = tab.getAttribute('data-tab');
-      const targetPane = document.getElementById(target);
-      if (targetPane) {
-        targetPane.classList.add('active');
-        targetPane.style.display = 'block';
-      }
-      state.activeTab = target;
-      if (target === 'tabAnalytics') refreshActiveReport();
-    });
-  });
-
   // Node Context Popup buttons
   document.getElementById('btnPopupSetStart').addEventListener('click', () => {
     if (state.viewport.activePopupNode) {
@@ -1634,67 +1368,6 @@ function initEventListeners() {
   });
   document.getElementById('btnClosePopup').addEventListener('click', hideNodePopup);
 
-  // Forms: Add Location & Road
-  document.getElementById('btnAddLocation').addEventListener('click', async () => {
-    const name = document.getElementById('locNameInput').value.trim();
-    const type = document.getElementById('locTypeSelect').value;
-    if (!name) return showToast('Enter a location name', 'info');
-    const res = await apiPost('/api/locations', { name, type });
-    if (res && res.success) {
-      showToast(`Added '${name}' (${type})`, 'success');
-      document.getElementById('locNameInput').value = '';
-      await fetchNetwork();
-    }
-  });
-
-  document.getElementById('btnAddRoad').addEventListener('click', async () => {
-    const from = document.getElementById('roadFromSelect').value;
-    const to = document.getElementById('roadToSelect').value;
-    const distance = parseFloat(document.getElementById('roadDistanceInput').value);
-    const time = parseFloat(document.getElementById('roadTimeInput').value);
-    if (!from || !to || isNaN(distance) || isNaN(time) || distance <= 0 || time <= 0) {
-      return showToast('Provide valid distance and time', 'info');
-    }
-    if (from.toLowerCase() === to.toLowerCase()) {
-      return showToast('Road must connect two different locations', 'info');
-    }
-    const res = await apiPost('/api/roads', { from, to, distance, time });
-    if (res && res.success) {
-      showToast(`Saved road: ${from} ⟷ ${to}`, 'success');
-      document.getElementById('roadDistanceInput').value = '';
-      document.getElementById('roadTimeInput').value = '';
-      await fetchNetwork();
-    }
-  });
-
-  // Fleet forms
-  document.getElementById('btnAddDriver').addEventListener('click', async () => {
-    const name = document.getElementById('driverNameInput').value.trim();
-    const phone = document.getElementById('driverPhoneInput').value.trim();
-    if (!name || phone.length < 7) return showToast('Valid name & phone required', 'info');
-    const res = await apiPost('/api/drivers', { name, phone });
-    if (res && res.success) {
-      showToast(`Driver '${name}' added`, 'success');
-      document.getElementById('driverNameInput').value = '';
-      document.getElementById('driverPhoneInput').value = '';
-      await loadFleetSelectors();
-    }
-  });
-
-  document.getElementById('btnAddVehicle').addEventListener('click', async () => {
-    const regNo = document.getElementById('vehicleRegInput').value.trim();
-    const type = document.getElementById('vehicleTypeSelect').value;
-    const capacity = parseFloat(document.getElementById('vehicleCapInput').value);
-    if (!regNo || isNaN(capacity) || capacity <= 0) return showToast('Valid plate & capacity required', 'info');
-    const res = await apiPost('/api/vehicles', { regNo, type, capacity });
-    if (res && res.success) {
-      showToast(`Vehicle '${regNo}' added`, 'success');
-      document.getElementById('vehicleRegInput').value = '';
-      document.getElementById('vehicleCapInput').value = '';
-      await loadFleetSelectors();
-    }
-  });
-
   // Map Controls
   document.getElementById('btnZoomIn').addEventListener('click', () => {
     state.viewport.zoom = Math.min(state.viewport.zoom * 1.2, 3.0);
@@ -1706,43 +1379,11 @@ function initEventListeners() {
   });
   document.getElementById('btnCenterNodes').addEventListener('click', autoFitGraph);
 
-  // Animation Controls
+  // Animation Controls (play/pause only, no speed)
   document.getElementById('btnToggleAnim').addEventListener('click', () => {
     state.animation.paused = !state.animation.paused;
     document.getElementById('btnToggleAnim').textContent = state.animation.paused ? '▶' : '⏸';
   });
-  document.querySelectorAll('.speed-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.animation.speed = parseFloat(btn.getAttribute('data-speed'));
-    });
-  });
-
-  // Reports
-  document.querySelectorAll('.report-tab').forEach(rt => {
-    rt.addEventListener('click', () => {
-      document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.report-panel').forEach(p => {
-        p.classList.remove('active');
-        p.style.display = 'none';
-      });
-      rt.classList.add('active');
-      const target = rt.getAttribute('data-report');
-      const targetPanel = document.getElementById(target);
-      if (targetPanel) {
-        targetPanel.classList.add('active');
-        targetPanel.style.display = 'block';
-      }
-      state.activeReport = target;
-      refreshActiveReport();
-    });
-  });
-
-  document.getElementById('btnRefreshTrips').addEventListener('click', refreshActiveReport);
-  document.getElementById('btnRefreshDrivers').addEventListener('click', refreshActiveReport);
-  document.getElementById('btnRefreshLocations').addEventListener('click', refreshActiveReport);
-  document.getElementById('btnRefreshAudit').addEventListener('click', refreshActiveReport);
 
   // Reload City & Docs
   document.getElementById('btnReloadSample').addEventListener('click', async () => {
@@ -1752,7 +1393,6 @@ function initEventListeners() {
         showToast('Sample city restored', 'success');
         clearRouteResult();
         await fetchNetwork();
-        await loadFleetSelectors();
         autoFitGraph();
       }
     }
@@ -1761,7 +1401,7 @@ function initEventListeners() {
   // Brand Logo Click: Auto-fit Map
   document.getElementById('btnLogo')?.addEventListener('click', autoFitGraph);
 
-  // Oracle Database Modal
+  // ADS Engine Modal
   const oracleModal = document.getElementById('oracleModal');
   document.getElementById('btnDbConfig')?.addEventListener('click', () => {
     oracleModal?.classList.remove('hidden');
@@ -1787,41 +1427,31 @@ function initEventListeners() {
 }
 
 // ----------------------------------------------------------------------------
-//  DATABASE ENGINE STATUS (Oracle / SQLite)
+//  ADS GRAPH ENGINE STATUS (C++14 / In-Memory ADS)
 // ----------------------------------------------------------------------------
 async function fetchDatabaseInfo() {
-  const info = await apiGet('/api/db/info');
+  const info = await apiGet('/api/ads/info') || await apiGet('/api/db/info');
   if (!info) return;
-
-  const engine = (info.engine || 'SQLITE').toUpperCase();
-  const isOracle = engine === 'ORACLE';
 
   const topLabel = document.getElementById('dbEngineLabel');
   if (topLabel) {
-    topLabel.textContent = isOracle ? 'Oracle DB' : 'SQLite DB';
+    topLabel.textContent = 'ADS C++14';
   }
 
   const topDot = document.getElementById('dbEngineDot');
   if (topDot) {
-    topDot.className = isOracle
-      ? 'w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_#f43f5e] animate-pulse'
-      : 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse';
+    topDot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] animate-pulse';
   }
 
   const badge = document.getElementById('modalDbEngineBadge');
   if (badge) {
-    if (isOracle) {
-      badge.textContent = 'ORACLE (ACTIVE)';
-      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
-    } else {
-      badge.textContent = 'SQLITE (ACTIVE)';
-      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
-    }
+    badge.textContent = 'C++14 ADS (ACTIVE)';
+    badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40';
   }
 
   const details = document.getElementById('modalDbDetails');
   if (details) {
-    details.textContent = info.details || (isOracle ? 'Oracle Database (ojdbc11)' : 'SQLite (delivery.db)');
+    details.textContent = info.details || 'In-Memory Graph ADS (Min-Heap Priority Queue & Adjacency List)';
   }
 }
 
@@ -1837,79 +1467,6 @@ async function switchOptimizationMode(mode) {
     if (state.currentRoute) {
       if (state.activePlannerSubmode === 'pointToPoint') calculatePointToPoint();
       else calculateMultiStop();
-    }
-  }
-}
-
-// ----------------------------------------------------------------------------
-//  REPORTS LOADER
-// ----------------------------------------------------------------------------
-async function refreshActiveReport() {
-  switch (state.activeReport) {
-    case 'repTrips': {
-      const data = await apiGet('/api/trips');
-      const tbody = document.getElementById('tripHistoryBody');
-      tbody.innerHTML = (!data || data.length === 0) ?
-        '<tr><td colspan="9" class="subtext">No saved trips yet.</td></tr>' :
-        data.map(t => `
-          <tr>
-            <td><code>#${t.id}</code></td>
-            <td>${t.createdAt.substring(0, 16)}</td>
-            <td>${escapeHtml(t.depot)}</td>
-            <td><strong>${escapeHtml(t.driver)}</strong></td>
-            <td>${escapeHtml(t.vehicle)}</td>
-            <td><span class="label-badge ${t.criterion === 'DISTANCE' ? 'start-badge' : 'end-badge'}">${t.criterion}</span></td>
-            <td>${t.stops}</td>
-            <td>${t.km.toFixed(1)}</td>
-            <td>${t.min.toFixed(0)}m</td>
-          </tr>
-        `).join('');
-      break;
-    }
-    case 'repDrivers': {
-      const data = await apiGet('/api/reports/drivers');
-      const tbody = document.getElementById('driverPerfBody');
-      tbody.innerHTML = (!data || data.length === 0) ?
-        '<tr><td colspan="4" class="subtext">No driver data</td></tr>' :
-        data.map(d => `
-          <tr>
-            <td><strong>${escapeHtml(d.driver)}</strong></td>
-            <td>${d.trips}</td>
-            <td>${d.totalKm.toFixed(1)} km</td>
-            <td>${d.avgMinutes.toFixed(0)} min</td>
-          </tr>
-        `).join('');
-      break;
-    }
-    case 'repLocations': {
-      const data = await apiGet('/api/reports/top-locations');
-      const tbody = document.getElementById('topLocationsBody');
-      tbody.innerHTML = (!data || data.length === 0) ?
-        '<tr><td colspan="3" class="subtext">No data</td></tr>' :
-        data.map(l => `
-          <tr>
-            <td><strong>${escapeHtml(l.location)}</strong></td>
-            <td><span class="label-badge ${l.type === 'WAREHOUSE' ? 'start-badge' : 'end-badge'}">${l.type}</span></td>
-            <td>${l.deliveries} deliveries</td>
-          </tr>
-        `).join('');
-      break;
-    }
-    case 'repAudit': {
-      const data = await apiGet('/api/reports/audit');
-      const tbody = document.getElementById('auditTrailBody');
-      tbody.innerHTML = (!data || data.length === 0) ?
-        '<tr><td colspan="5" class="subtext">No audit changes</td></tr>' :
-        data.map(a => `
-          <tr>
-            <td><code>#${a.id}</code></td>
-            <td>${a.changedAt.substring(0, 19)}</td>
-            <td>Road #${a.roadId}</td>
-            <td><span class="label-badge ${a.action === 'CLOSED' ? 'end-badge' : 'start-badge'}">${escapeHtml(a.action)}</span></td>
-            <td>${escapeHtml(a.details || '-')}</td>
-          </tr>
-        `).join('');
-      break;
     }
   }
 }

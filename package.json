@@ -1,18 +1,19 @@
 {
   "name": "routeflow",
-  "version": "1.0.0",
-  "description": "RouteFlow - Intelligent Delivery Route Optimization System (DSA Dijkstra + Relational DBMS)",
+  "version": "2.0.0",
+  "description": "RouteFlow - Intelligent Delivery Route Optimization System (C++ ADS Dijkstra Engine)",
   "main": "public/index.html",
   "scripts": {
-    "build": "echo 'RouteFlow build ready'",
-    "start": "java -cp \"bin;sqlite-jdbc.jar;ojdbc11.jar\" delivery.Main --server"
+    "build": "g++ -std=c++14 -O2 src/main.cpp -o routeflow.exe -lws2_32",
+    "start": "routeflow.exe --server"
   },
   "keywords": [
     "dijkstra",
     "route-optimization",
+    "ads",
     "dsa",
-    "oracle-database",
-    "sqlite",
+    "cpp",
+    "graph-algorithms",
     "tailwind-css",
     "vercel"
   ],

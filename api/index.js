@@ -37,8 +37,8 @@ module.exports = (req, res) => {
       locations: state.locations,
       roads: state.roads,
       closedCount,
-      dbEngine: 'ORACLE / VERCEL',
-      dbDetails: 'Vercel Serverless DBMS Engine'
+      dbEngine: 'ADS SERVERLESS ENGINE',
+      dbDetails: 'Vercel Serverless Graph ADS Engine (Adjacency List + Min-Heap)'
     });
   }
 

@@ -1,17 +1,18 @@
 @echo off
 echo ============================================================
-echo   RouteFlow: Delivery Route Optimization System (Java + Web)
-echo   Databases supported: Oracle Database & SQLite (Auto-detect)
+echo   RouteFlow: Delivery Route Optimization System (C++ ADS Engine)
+echo   Data Structures: Graph (Adjacency List) + Min-Heap Priority Queue
+echo   Algorithm: Dijkstra Shortest Path O((V + E) log V) & TSP Planner
 echo ============================================================
-echo Compiling Java source files...
-if not exist bin mkdir bin
-javac -cp "sqlite-jdbc.jar;ojdbc11.jar" -d bin src/delivery/*.java
+echo Compiling C++ source files with g++...
+g++ -std=c++14 -O2 src/main.cpp -o routeflow.exe -lws2_32
 if %errorlevel% neq 0 (
-    echo Compilation failed!
+    echo C++ compilation failed!
     pause
     exit /b %errorlevel%
 )
 
-echo Starting RouteFlow Web Server and Application...
-echo Open your browser at: http://localhost:8080
-java -cp "bin;sqlite-jdbc.jar;ojdbc11.jar" delivery.Main %*
+echo Starting RouteFlow C++ Server...
+echo Opening browser at: http://localhost:8080
+start http://localhost:8080
+.\routeflow.exe %*
