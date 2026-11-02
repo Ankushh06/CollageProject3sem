@@ -12,7 +12,15 @@ const DEFAULT_LOCATIONS = [
   { id: 6, name: 'Airport', type: 'LANDMARK', x: 760, y: 130 },
   { id: 7, name: 'Bus Stand', type: 'LANDMARK', x: 150, y: 380 },
   { id: 8, name: 'Old City', type: 'CUSTOMER', x: 230, y: 460 },
-  { id: 9, name: 'Tech Park', type: 'CUSTOMER', x: 680, y: 260 }
+  { id: 9, name: 'Tech Park', type: 'CUSTOMER', x: 680, y: 260 },
+  { id: 10, name: 'Cargo Hub', type: 'WAREHOUSE', x: 130, y: 90 },
+  { id: 11, name: 'City Center', type: 'CUSTOMER', x: 430, y: 270 },
+  { id: 12, name: 'Financial District', type: 'CUSTOMER', x: 500, y: 370 },
+  { id: 13, name: 'Port Terminal', type: 'LANDMARK', x: 840, y: 230 },
+  { id: 14, name: 'Industrial Estate', type: 'WAREHOUSE', x: 660, y: 430 },
+  { id: 15, name: 'Sports Complex', type: 'LANDMARK', x: 390, y: 490 },
+  { id: 16, name: 'Metro Station', type: 'LANDMARK', x: 220, y: 310 },
+  { id: 17, name: 'Eco Park', type: 'CUSTOMER', x: 790, y: 370 }
 ];
 
 const DEFAULT_ROADS = [
@@ -31,7 +39,31 @@ const DEFAULT_ROADS = [
   { roadId: 13, locA: 'Mall', locB: 'Tech Park', distanceKm: 4.0, travelTimeMin: 9.0, isActive: true },
   { roadId: 14, locA: 'Mall', locB: 'Airport', distanceKm: 11.0, travelTimeMin: 25.0, isActive: true },
   { roadId: 15, locA: 'Tech Park', locB: 'Airport', distanceKm: 9.0, travelTimeMin: 16.0, isActive: true },
-  { roadId: 16, locA: 'Bus Stand', locB: 'Old City', distanceKm: 5.0, travelTimeMin: 15.0, isActive: true }
+  { roadId: 16, locA: 'Bus Stand', locB: 'Old City', distanceKm: 5.0, travelTimeMin: 15.0, isActive: true },
+  { roadId: 17, locA: 'Cargo Hub', locB: 'Warehouse', distanceKm: 3.5, travelTimeMin: 8.0, isActive: true },
+  { roadId: 18, locA: 'Cargo Hub', locB: 'Hospital', distanceKm: 4.5, travelTimeMin: 11.0, isActive: true },
+  { roadId: 19, locA: 'Metro Station', locB: 'Warehouse', distanceKm: 2.5, travelTimeMin: 7.0, isActive: true },
+  { roadId: 20, locA: 'Metro Station', locB: 'Market', distanceKm: 3.0, travelTimeMin: 8.0, isActive: true },
+  { roadId: 21, locA: 'Metro Station', locB: 'Bus Stand', distanceKm: 2.0, travelTimeMin: 6.0, isActive: true },
+  { roadId: 22, locA: 'Metro Station', locB: 'Railway Station', distanceKm: 3.5, travelTimeMin: 9.0, isActive: true },
+  { roadId: 23, locA: 'City Center', locB: 'Market', distanceKm: 2.5, travelTimeMin: 7.0, isActive: true },
+  { roadId: 24, locA: 'City Center', locB: 'Mall', distanceKm: 3.0, travelTimeMin: 8.0, isActive: true },
+  { roadId: 25, locA: 'City Center', locB: 'Railway Station', distanceKm: 3.5, travelTimeMin: 10.0, isActive: true },
+  { roadId: 26, locA: 'City Center', locB: 'University', distanceKm: 4.0, travelTimeMin: 10.0, isActive: true },
+  { roadId: 27, locA: 'Financial District', locB: 'City Center', distanceKm: 2.0, travelTimeMin: 6.0, isActive: true },
+  { roadId: 28, locA: 'Financial District', locB: 'Railway Station', distanceKm: 4.0, travelTimeMin: 11.0, isActive: true },
+  { roadId: 29, locA: 'Financial District', locB: 'Mall', distanceKm: 4.5, travelTimeMin: 12.0, isActive: true },
+  { roadId: 30, locA: 'Financial District', locB: 'Industrial Estate', distanceKm: 4.0, travelTimeMin: 10.0, isActive: true },
+  { roadId: 31, locA: 'Sports Complex', locB: 'Railway Station', distanceKm: 3.0, travelTimeMin: 8.0, isActive: true },
+  { roadId: 32, locA: 'Sports Complex', locB: 'Old City', distanceKm: 3.5, travelTimeMin: 10.0, isActive: true },
+  { roadId: 33, locA: 'Sports Complex', locB: 'Financial District', distanceKm: 3.5, travelTimeMin: 9.0, isActive: true },
+  { roadId: 34, locA: 'Industrial Estate', locB: 'Tech Park', distanceKm: 4.5, travelTimeMin: 12.0, isActive: true },
+  { roadId: 35, locA: 'Industrial Estate', locB: 'Eco Park', distanceKm: 3.5, travelTimeMin: 9.0, isActive: true },
+  { roadId: 36, locA: 'Industrial Estate', locB: 'Sports Complex', distanceKm: 6.0, travelTimeMin: 16.0, isActive: true },
+  { roadId: 37, locA: 'Port Terminal', locB: 'Airport', distanceKm: 5.0, travelTimeMin: 10.0, isActive: true },
+  { roadId: 38, locA: 'Port Terminal', locB: 'Tech Park', distanceKm: 4.0, travelTimeMin: 9.0, isActive: true },
+  { roadId: 39, locA: 'Port Terminal', locB: 'Eco Park', distanceKm: 4.5, travelTimeMin: 11.0, isActive: true },
+  { roadId: 40, locA: 'Eco Park', locB: 'Tech Park', distanceKm: 5.0, travelTimeMin: 12.0, isActive: true }
 ];
 
 const DEFAULT_DRIVERS = [

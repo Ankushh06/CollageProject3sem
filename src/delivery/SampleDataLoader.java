@@ -40,26 +40,58 @@ public class SampleDataLoader {
         new SampleLocation("Airport", "LANDMARK", 760, 130),
         new SampleLocation("Bus Stand", "LANDMARK", 150, 380),
         new SampleLocation("Old City", "CUSTOMER", 230, 460),
-        new SampleLocation("Tech Park", "CUSTOMER", 680, 260)
+        new SampleLocation("Tech Park", "CUSTOMER", 680, 260),
+        new SampleLocation("Cargo Hub", "WAREHOUSE", 130, 90),
+        new SampleLocation("City Center", "CUSTOMER", 430, 270),
+        new SampleLocation("Financial District", "CUSTOMER", 500, 370),
+        new SampleLocation("Port Terminal", "LANDMARK", 840, 230),
+        new SampleLocation("Industrial Estate", "WAREHOUSE", 660, 430),
+        new SampleLocation("Sports Complex", "LANDMARK", 390, 490),
+        new SampleLocation("Metro Station", "LANDMARK", 220, 310),
+        new SampleLocation("Eco Park", "CUSTOMER", 790, 370)
     };
 
     public static final SampleRoad[] SAMPLE_ROADS = {
-        new SampleRoad("Warehouse", "Market", 4, 12),
-        new SampleRoad("Warehouse", "Hospital", 7, 14),
-        new SampleRoad("Warehouse", "Bus Stand", 3, 10),
-        new SampleRoad("Market", "Hospital", 2, 8),
-        new SampleRoad("Market", "Old City", 5, 20),
-        new SampleRoad("Market", "Mall", 6, 15),
-        new SampleRoad("Hospital", "University", 4, 9),
-        new SampleRoad("Hospital", "Railway Station", 8, 22),
-        new SampleRoad("University", "Tech Park", 5, 11),
-        new SampleRoad("University", "Mall", 3, 10),
-        new SampleRoad("Railway Station", "Old City", 3, 12),
-        new SampleRoad("Railway Station", "Bus Stand", 6, 18),
-        new SampleRoad("Mall", "Tech Park", 4, 9),
-        new SampleRoad("Mall", "Airport", 11, 25),
-        new SampleRoad("Tech Park", "Airport", 9, 16),
-        new SampleRoad("Old City", "Bus Stand", 5, 15)
+        new SampleRoad("Warehouse", "Market", 4.0, 12.0),
+        new SampleRoad("Warehouse", "Hospital", 7.0, 14.0),
+        new SampleRoad("Warehouse", "Bus Stand", 3.0, 10.0),
+        new SampleRoad("Market", "Hospital", 2.0, 8.0),
+        new SampleRoad("Market", "Old City", 5.0, 20.0),
+        new SampleRoad("Market", "Mall", 6.0, 15.0),
+        new SampleRoad("Hospital", "University", 4.0, 9.0),
+        new SampleRoad("Hospital", "Railway Station", 8.0, 22.0),
+        new SampleRoad("University", "Tech Park", 5.0, 11.0),
+        new SampleRoad("University", "Mall", 3.0, 10.0),
+        new SampleRoad("Railway Station", "Old City", 3.0, 12.0),
+        new SampleRoad("Railway Station", "Bus Stand", 6.0, 18.0),
+        new SampleRoad("Mall", "Tech Park", 4.0, 9.0),
+        new SampleRoad("Mall", "Airport", 11.0, 25.0),
+        new SampleRoad("Tech Park", "Airport", 9.0, 16.0),
+        new SampleRoad("Old City", "Bus Stand", 5.0, 15.0),
+        new SampleRoad("Cargo Hub", "Warehouse", 3.5, 8.0),
+        new SampleRoad("Cargo Hub", "Hospital", 4.5, 11.0),
+        new SampleRoad("Metro Station", "Warehouse", 2.5, 7.0),
+        new SampleRoad("Metro Station", "Market", 3.0, 8.0),
+        new SampleRoad("Metro Station", "Bus Stand", 2.0, 6.0),
+        new SampleRoad("Metro Station", "Railway Station", 3.5, 9.0),
+        new SampleRoad("City Center", "Market", 2.5, 7.0),
+        new SampleRoad("City Center", "Mall", 3.0, 8.0),
+        new SampleRoad("City Center", "Railway Station", 3.5, 10.0),
+        new SampleRoad("City Center", "University", 4.0, 10.0),
+        new SampleRoad("Financial District", "City Center", 2.0, 6.0),
+        new SampleRoad("Financial District", "Railway Station", 4.0, 11.0),
+        new SampleRoad("Financial District", "Mall", 4.5, 12.0),
+        new SampleRoad("Financial District", "Industrial Estate", 4.0, 10.0),
+        new SampleRoad("Sports Complex", "Railway Station", 3.0, 8.0),
+        new SampleRoad("Sports Complex", "Old City", 3.5, 10.0),
+        new SampleRoad("Sports Complex", "Financial District", 3.5, 9.0),
+        new SampleRoad("Industrial Estate", "Tech Park", 4.5, 12.0),
+        new SampleRoad("Industrial Estate", "Eco Park", 3.5, 9.0),
+        new SampleRoad("Industrial Estate", "Sports Complex", 6.0, 16.0),
+        new SampleRoad("Port Terminal", "Airport", 5.0, 10.0),
+        new SampleRoad("Port Terminal", "Tech Park", 4.0, 9.0),
+        new SampleRoad("Port Terminal", "Eco Park", 4.5, 11.0),
+        new SampleRoad("Eco Park", "Tech Park", 5.0, 12.0)
     };
 
     public static void loadSampleData(Database db, DeliveryNetwork net) {
@@ -90,6 +122,15 @@ public class SampleDataLoader {
             if (id != -1) {
                 net.setCoordinates(id, loc.x, loc.y);
             }
+        }
+    }
+
+    public static void main(String[] args) {
+        Database db = new Database();
+        if (db.open("delivery.db")) {
+            DeliveryNetwork net = new DeliveryNetwork();
+            loadSampleData(db, net);
+            System.out.println("Loaded " + net.size() + " locations into " + db.getEngineDetails());
         }
     }
 }

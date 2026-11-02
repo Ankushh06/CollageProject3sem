@@ -77,13 +77,13 @@ public class DeliveryNetwork {
 
     private double getDefaultX(int index) {
         // Layout nodes nicely if coordinates not supplied
-        double[] defaultXs = {200, 380, 350, 520, 360, 600, 800, 180, 260, 720};
+        double[] defaultXs = {160, 340, 310, 490, 320, 570, 760, 150, 230, 680, 130, 430, 500, 840, 660, 390, 220, 790};
         if (index < defaultXs.length) return defaultXs[index];
         return 200 + (index * 73) % 650;
     }
 
     private double getDefaultY(int index) {
-        double[] defaultYs = {300, 260, 140, 130, 460, 270, 180, 450, 520, 310};
+        double[] defaultYs = {240, 200, 80, 80, 390, 210, 130, 380, 460, 260, 90, 270, 370, 230, 430, 490, 310, 370};
         if (index < defaultYs.length) return defaultYs[index];
         return 120 + (index * 91) % 450;
     }
