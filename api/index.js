@@ -282,17 +282,12 @@ module.exports = (req, res) => {
     return res.status(200).json({ success: true, message: 'Sample city reloaded successfully' });
   }
 
-  // 16. /api/db/info
-  if (endpoint === 'db/info') {
-    const isOracleEnv = Boolean(process.env.ORACLE_HOST || process.env.ORACLE_SERVICE);
+  // 16. /api/ads/info or /api/db/info
+  if (endpoint === 'ads/info' || endpoint === 'db/info') {
     return res.status(200).json({
-      engine: isOracleEnv ? 'ORACLE' : 'ORACLE / VERCEL',
-      details: isOracleEnv ? `Oracle Cloud Database (${process.env.ORACLE_SERVICE || 'FREEPDB1'})` : 'Vercel Serverless DBMS Engine (Active)',
-      isOracle: isOracleEnv,
-      host: process.env.ORACLE_HOST || 'localhost',
-      port: process.env.ORACLE_PORT || '1521',
-      service: process.env.ORACLE_SERVICE || 'FREEPDB1',
-      user: process.env.ORACLE_USER || 'SYSTEM'
+      engine: 'ADS C++14 / VERCEL SERVERLESS',
+      details: 'In-Memory Graph ADS (Min-Heap Priority Queue & Adjacency List)',
+      criterion: state.criterion
     });
   }
 

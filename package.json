@@ -1,11 +1,13 @@
 {
   "name": "routeflow",
   "version": "2.0.0",
-  "description": "RouteFlow - Intelligent Delivery Route Optimization System (C++ ADS Dijkstra Engine)",
+  "description": "RouteFlow - Intelligent Delivery Route Optimization System (ADS Dijkstra Engine)",
   "main": "public/index.html",
   "scripts": {
-    "build": "g++ -std=c++14 -O2 src/main.cpp -o routeflow.exe -lws2_32",
-    "start": "routeflow.exe --server"
+    "build": "echo Build completed",
+    "build:cpp": "g++ -std=c++14 -O2 src/main.cpp -o routeflow.exe -lws2_32",
+    "start": "echo RouteFlow ready",
+    "start:cpp": "routeflow.exe --server"
   },
   "keywords": [
     "dijkstra",
