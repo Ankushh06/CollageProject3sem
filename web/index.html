@@ -272,6 +272,35 @@
               <div id="resTurnTimeline" class="space-y-1.5 max-h-36 sm:max-h-44 overflow-y-auto custom-scrollbar pr-1"></div>
             </div>
           </div>
+
+          <!-- ROAD CLOSURE & DETOUR MANAGER -->
+          <div class="bg-navy-950/70 border border-white/10 rounded-2xl p-3 sm:p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-xs font-heading font-bold text-white">
+                <span>🚧</span> Closed Roads & Detours
+                <span id="closedRoadsCountBadge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">0 Closed</span>
+              </div>
+              <button type="button" id="btnReopenAllRoads" class="hidden text-[11px] text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                Reopen All
+              </button>
+            </div>
+            
+            <p class="text-[11px] text-slate-400 leading-tight">
+              Click any road on the map to toggle, or pick a road below to simulate road closures:
+            </p>
+
+            <div class="flex gap-1.5">
+              <select id="selectQuickCloseRoad" class="flex-1 min-w-0 bg-navy-900 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 truncate">
+                <option value="">Select a road to close...</option>
+              </select>
+              <button type="button" id="btnQuickCloseRoad" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white font-heading font-semibold text-xs rounded-lg transition shrink-0">
+                ⛔ Close
+              </button>
+            </div>
+
+            <!-- List of actively closed roads -->
+            <div id="closedRoadsList" class="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar"></div>
+          </div>
         </section>
       </div>
     </aside>

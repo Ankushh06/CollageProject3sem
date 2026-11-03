@@ -55,12 +55,12 @@ module.exports = (req, res) => {
 
   // 3. /api/route
   if (endpoint === 'route') {
-    const { source, destination, criterion } = body;
+    const { source, destination, criterion, closedRoads } = body;
     if (!source || !destination) {
       return res.status(400).json({ error: 'Source and destination required' });
     }
     const crit = criterion || state.criterion || 'DISTANCE';
-    const plan = dijkstra(source, destination, crit);
+    const plan = dijkstra(source, destination, crit, closedRoads);
     if (!plan.valid) {
       return res.status(400).json({ error: 'No open road route found', plan });
     }
@@ -69,9 +69,9 @@ module.exports = (req, res) => {
 
   // 4. /api/plan
   if (endpoint === 'plan') {
-    const { depot = 'Warehouse', stops = [], returnToDepot = true, criterion } = body;
+    const { depot = 'Warehouse', stops = [], returnToDepot = true, criterion, closedRoads } = body;
     const crit = criterion || state.criterion || 'DISTANCE';
-    const plan = planTSP(depot, stops, returnToDepot, crit);
+    const plan = planTSP(depot, stops, returnToDepot, crit, closedRoads);
     if (!plan.valid) {
       return res.status(400).json({ error: plan.error || 'Could not plan multi-stop delivery route', plan });
     }
@@ -158,17 +158,26 @@ module.exports = (req, res) => {
 
   // 8. /api/roads/toggle
   if (endpoint === 'roads/toggle') {
-    const { from, to, active } = body;
-    const road = state.roads.find(r => 
-      (r.locA.toLowerCase() === from?.toLowerCase() && r.locB.toLowerCase() === to?.toLowerCase()) ||
-      (r.locB.toLowerCase() === from?.toLowerCase() && r.locA.toLowerCase() === to?.toLowerCase())
-    );
+    const { from, to, roadId, active } = body;
+    let road = null;
+    if (roadId) {
+      road = state.roads.find(r => r.roadId === Number(roadId));
+    }
+    if (!road && from && to) {
+      const fa = from.trim().toLowerCase();
+      const ta = to.trim().toLowerCase();
+      road = state.roads.find(r => 
+        (r.locA.toLowerCase() === fa && r.locB.toLowerCase() === ta) ||
+        (r.locB.toLowerCase() === fa && r.locA.toLowerCase() === ta)
+      );
+    }
 
     if (!road) {
       return res.status(404).json({ error: 'Road not found' });
     }
 
-    road.isActive = Boolean(active);
+    const isActive = (active === true || active === 'true' || active === 1);
+    road.isActive = isActive;
     state.audit.unshift({
       id: state.audit.length + 1,
       changedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
@@ -178,6 +187,18 @@ module.exports = (req, res) => {
     });
 
     return res.status(200).json({ success: true, active: road.isActive });
+  }
+
+  // 8b. /api/roads/reopen-all
+  if (endpoint === 'roads/reopen-all') {
+    let reopenedCount = 0;
+    state.roads.forEach(r => {
+      if (!r.isActive) {
+        r.isActive = true;
+        reopenedCount++;
+      }
+    });
+    return res.status(200).json({ success: true, reopened: reopenedCount });
   }
 
   // 9. /api/trips

@@ -190,6 +190,102 @@ async function apiPost(endpoint, body) {
   }
 }
 
+function saveClosedRoadsToStorage() {
+  try {
+    const closed = (state.network.roads || [])
+      .filter(r => r.isActive === false || r.isActive === 'false' || r.isActive === 0)
+      .map(r => ({ roadId: r.roadId, locA: r.locA, locB: r.locB }));
+    localStorage.setItem('routeflow_closed_roads', JSON.stringify(closed));
+  } catch (e) {
+    // Ignore storage quota errors
+  }
+}
+
+function loadClosedRoadsFromStorage() {
+  try {
+    const raw = localStorage.getItem('routeflow_closed_roads');
+    if (!raw) return [];
+    return JSON.parse(raw) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function applyStoredClosedRoads() {
+  const stored = loadClosedRoadsFromStorage();
+  const roads = state.network.roads || [];
+  if (stored && stored.length > 0) {
+    stored.forEach(c => {
+      roads.forEach(r => {
+        const matchId = (c.roadId && r.roadId === c.roadId);
+        const matchNames = (
+          (r.locA.toLowerCase() === (c.locA || '').toLowerCase() && r.locB.toLowerCase() === (c.locB || '').toLowerCase()) ||
+          (r.locA.toLowerCase() === (c.locB || '').toLowerCase() && r.locB.toLowerCase() === (c.locA || '').toLowerCase())
+        );
+        if (matchId || matchNames) {
+          r.isActive = false;
+        }
+      });
+    });
+  }
+  state.network.closedCount = roads.filter(r => !r.isActive).length;
+}
+
+function renderClosedRoadsList() {
+  const list = document.getElementById('closedRoadsList');
+  const countBadge = document.getElementById('closedRoadsCountBadge');
+  const btnReopenAll = document.getElementById('btnReopenAllRoads');
+  const quickSelect = document.getElementById('selectQuickCloseRoad');
+  const roads = state.network.roads || [];
+
+  const closed = roads.filter(r => r.isActive === false || r.isActive === 'false' || r.isActive === 0);
+  if (countBadge) {
+    countBadge.textContent = `${closed.length} Closed`;
+    countBadge.classList.toggle('hidden', closed.length === 0);
+  }
+  if (btnReopenAll) {
+    btnReopenAll.classList.toggle('hidden', closed.length === 0);
+  }
+
+  if (quickSelect) {
+    const openRoads = roads.filter(r => r.isActive !== false && r.isActive !== 'false' && r.isActive !== 0);
+    const prevVal = quickSelect.value;
+    quickSelect.innerHTML = '<option value="">Select a road to close...</option>' +
+      openRoads.map(r => `<option value="${r.roadId}">${escapeHtml(r.locA)} ⟷ ${escapeHtml(r.locB)} (${r.distanceKm.toFixed(1)} km)</option>`).join('');
+    if (prevVal) quickSelect.value = prevVal;
+  }
+
+  if (!list) return;
+
+  if (closed.length === 0) {
+    list.innerHTML = '<div class="text-[11px] text-slate-500 italic py-1 text-center">No roads currently closed. Click any road on map to block.</div>';
+    return;
+  }
+
+  list.innerHTML = closed.map(r => `
+    <div class="flex items-center justify-between p-1.5 px-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span class="text-rose-400">⛔</span>
+        <span class="font-semibold text-rose-200 truncate">${escapeHtml(r.locA)} ⟷ ${escapeHtml(r.locB)}</span>
+        <span class="text-[10px] text-slate-400 font-mono">${r.distanceKm.toFixed(1)}km</span>
+      </div>
+      <button type="button" class="btn-reopen-single text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition font-heading font-semibold"
+              data-from="${escapeHtml(r.locA)}" data-to="${escapeHtml(r.locB)}" data-id="${r.roadId}">
+        Reopen
+      </button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.btn-reopen-single').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const from = btn.getAttribute('data-from');
+      const to = btn.getAttribute('data-to');
+      await toggleRoadState(from, to, true);
+    });
+  });
+}
+
 async function fetchNetwork() {
   const data = await apiGet('/api/network');
   if (data && data.locations) {
@@ -199,12 +295,16 @@ async function fetchNetwork() {
     state.network.roads = JSON.parse(JSON.stringify(FALLBACK_ROADS));
   }
 
+  // Ensure stored road closures are retained across stateless serverless invocations
+  applyStoredClosedRoads();
+
   const isDist = state.network.criterion === 'DISTANCE';
   document.getElementById('btnModeDistance').classList.toggle('active', isDist);
   document.getElementById('btnModeTime').classList.toggle('active', !isDist);
 
   renderLocationChips();
   populateStopsCheckboxes();
+  renderClosedRoadsList();
   requestRender();
 }
 
@@ -297,16 +397,65 @@ function populateStopsCheckboxes() {
 }
 
 async function toggleRoadState(from, to, newActiveState) {
-  const res = await apiPost('/api/roads/toggle', { from, to, active: newActiveState });
-  if (res && res.success) {
-    const statusText = newActiveState ? 'REOPENED' : 'CLOSED';
-    showToast(`Road ${from} ⟷ ${to} is now ${statusText}!`, newActiveState ? 'success' : 'error');
-    updateHudText(`Road ${from} ⟷ ${to} ${statusText}. Recalculating path...`);
-    await fetchNetwork();
-    if (state.currentRoute) {
-      if (state.activePlannerSubmode === 'pointToPoint') calculatePointToPoint();
-      else calculateMultiStop();
+  const normA = (from || '').trim().toLowerCase();
+  const normB = (to || '').trim().toLowerCase();
+
+  // 1. Immediately update client-side state optimistically
+  const roads = state.network.roads || [];
+  let targetRoad = null;
+  roads.forEach(r => {
+    const ra = (r.locA || '').trim().toLowerCase();
+    const rb = (r.locB || '').trim().toLowerCase();
+    if ((ra === normA && rb === normB) || (ra === normB && rb === normA)) {
+      r.isActive = Boolean(newActiveState);
+      targetRoad = r;
     }
+  });
+
+  const statusText = newActiveState ? 'REOPENED' : 'CLOSED';
+
+  if (targetRoad) {
+    state.network.closedCount = roads.filter(r => r.isActive === false || r.isActive === 'false' || r.isActive === 0).length;
+    saveClosedRoadsToStorage();
+    renderClosedRoadsList();
+    showToast(`Road ${targetRoad.locA} ⟷ ${targetRoad.locB} is now ${statusText}!`, newActiveState ? 'success' : 'error');
+    updateHudText(`Road ${targetRoad.locA} ⟷ ${targetRoad.locB} ${statusText}. Recalculating path...`);
+    requestRender();
+  }
+
+  // 2. Sync with backend API
+  try {
+    await apiPost('/api/roads/toggle', { from, to, active: Boolean(newActiveState) });
+  } catch (err) {
+    console.warn('Backend road toggle sync deferred (client active):', err.message);
+  }
+
+  // 3. Recalculate route if one was displayed
+  if (state.currentRoute) {
+    if (state.activePlannerSubmode === 'pointToPoint') calculatePointToPoint();
+    else calculateMultiStop();
+  }
+}
+
+async function reopenAllRoads() {
+  const roads = state.network.roads || [];
+  roads.forEach(r => { r.isActive = true; });
+  state.network.closedCount = 0;
+  saveClosedRoadsToStorage();
+  renderClosedRoadsList();
+  showToast('All closed roads have been reopened!', 'success');
+  updateHudText('All roads reopened. Recalculating routes...');
+  requestRender();
+
+  try {
+    await apiPost('/api/roads/reopen-all', {});
+  } catch (e) {
+    // ignore
+  }
+
+  if (state.currentRoute) {
+    if (state.activePlannerSubmode === 'pointToPoint') calculatePointToPoint();
+    else calculateMultiStop();
   }
 }
 
@@ -327,14 +476,37 @@ async function calculatePointToPoint() {
   }
 
   updateHudText(`Calculating shortest route: ${source} ➔ ${destination}...`);
+
+  // Collect closed roads from client state to ensure no closed roads are used
+  const closedRoads = (state.network.roads || [])
+    .filter(r => r.isActive === false || r.isActive === 'false' || r.isActive === 0)
+    .map(r => ({ roadId: r.roadId, from: r.locA, to: r.locB }));
+
   let res = await apiPost('/api/route', {
     source,
     destination,
-    criterion: state.network.criterion
+    criterion: state.network.criterion,
+    closedRoads
   });
 
-  if (!res || !res.valid) {
-    // Client-side Dijkstra fallback
+  // Verify server route strictly does not traverse any closed road
+  const isServerRouteViolatingClosure = (routeRes) => {
+    if (!routeRes || !routeRes.valid || !routeRes.routeNames) return false;
+    const names = routeRes.routeNames;
+    for (let i = 0; i + 1 < names.length; i++) {
+      const u = names[i].toLowerCase();
+      const v = names[i + 1].toLowerCase();
+      const isClosed = closedRoads.some(cr =>
+        (cr.from.toLowerCase() === u && cr.to.toLowerCase() === v) ||
+        (cr.from.toLowerCase() === v && cr.to.toLowerCase() === u)
+      );
+      if (isClosed) return true;
+    }
+    return false;
+  };
+
+  if (!res || !res.valid || isServerRouteViolatingClosure(res)) {
+    // Client-side Dijkstra fallback guaranteed to respect all road closures
     res = clientDijkstra(source, destination, state.network.criterion);
   }
 
@@ -365,15 +537,37 @@ async function calculateMultiStop() {
   }
 
   updateHudText(`Optimizing multi-stop delivery tour for ${stops.length} stops...`);
+
+  // Collect closed roads from client state
+  const closedRoads = (state.network.roads || [])
+    .filter(r => r.isActive === false || r.isActive === 'false' || r.isActive === 0)
+    .map(r => ({ roadId: r.roadId, from: r.locA, to: r.locB }));
+
   let res = await apiPost('/api/plan', {
     depot,
     stops,
     returnToDepot,
-    criterion: state.network.criterion
+    criterion: state.network.criterion,
+    closedRoads
   });
 
-  if (!res || !res.valid) {
-    // Client-side TSP fallback
+  const isServerTourViolatingClosure = (tourRes) => {
+    if (!tourRes || !tourRes.valid || !tourRes.routeNames) return false;
+    const names = tourRes.routeNames;
+    for (let i = 0; i + 1 < names.length; i++) {
+      const u = names[i].toLowerCase();
+      const v = names[i + 1].toLowerCase();
+      const isClosed = closedRoads.some(cr =>
+        (cr.from.toLowerCase() === u && cr.to.toLowerCase() === v) ||
+        (cr.from.toLowerCase() === v && cr.to.toLowerCase() === u)
+      );
+      if (isClosed) return true;
+    }
+    return false;
+  };
+
+  if (!res || !res.valid || isServerTourViolatingClosure(res)) {
+    // Client-side TSP fallback guaranteed to respect all closures
     res = clientPlanTSP(depot, stops, returnToDepot, state.network.criterion);
   }
 
@@ -410,7 +604,7 @@ function clientDijkstra(srcName, dstName, criterion = 'DISTANCE') {
   locs.forEach(l => adj.set(l.name, []));
 
   roads.forEach(r => {
-    if (!r.isActive) return;
+    if (r.isActive === false || r.isActive === 'false' || r.isActive === 0) return;
     const w = isTime ? r.travelTimeMin : r.distanceKm;
     if (adj.has(r.locA)) adj.get(r.locA).push({ to: r.locB, cost: w, km: r.distanceKm, min: r.travelTimeMin });
     if (adj.has(r.locB)) adj.get(r.locB).push({ to: r.locA, cost: w, km: r.distanceKm, min: r.travelTimeMin });
@@ -751,7 +945,7 @@ function drawRoads() {
     if (!a || !b) return;
 
     const inRoute = isSegmentInRoute(r.locA, r.locB);
-    const isClosed = !r.isActive;
+    const isClosed = (r.isActive === false || r.isActive === 'false' || r.isActive === 0);
     const isHovered = (state.viewport.hoveredRoad === r);
 
     ctx.save();
@@ -759,7 +953,12 @@ function drawRoads() {
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
 
-    if (inRoute) {
+    if (isClosed) {
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = isHovered ? 4 : 2.5;
+      ctx.setLineDash([6, 6]);
+      ctx.stroke();
+    } else if (inRoute) {
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 6;
       ctx.shadowColor = 'rgba(16, 185, 129, 0.8)';
@@ -772,11 +971,6 @@ function drawRoads() {
       ctx.strokeStyle = '#a7f3d0';
       ctx.lineWidth = 2.5;
       ctx.shadowBlur = 0;
-      ctx.stroke();
-    } else if (isClosed) {
-      ctx.strokeStyle = '#f43f5e';
-      ctx.lineWidth = isHovered ? 3.5 : 2;
-      ctx.setLineDash([6, 6]);
       ctx.stroke();
     } else {
       ctx.strokeStyle = isHovered ? '#38bdf8' : 'rgba(56, 189, 248, 0.4)';
@@ -1340,6 +1534,28 @@ function initEventListeners() {
   document.getElementById('btnCalculateRoute').addEventListener('click', calculatePointToPoint);
   document.getElementById('btnCalculateMultiStop').addEventListener('click', calculateMultiStop);
   document.getElementById('btnCloseResult').addEventListener('click', clearRouteResult);
+
+  // Road Closure Manager listeners
+  const btnReopenAll = document.getElementById('btnReopenAllRoads');
+  if (btnReopenAll) {
+    btnReopenAll.addEventListener('click', reopenAllRoads);
+  }
+
+  const btnQuickClose = document.getElementById('btnQuickCloseRoad');
+  if (btnQuickClose) {
+    btnQuickClose.addEventListener('click', async () => {
+      const sel = document.getElementById('selectQuickCloseRoad');
+      if (!sel || !sel.value) {
+        showToast('Please select a road to close', 'info');
+        return;
+      }
+      const roadId = Number(sel.value);
+      const r = (state.network.roads || []).find(x => x.roadId === roadId);
+      if (r) {
+        await toggleRoadState(r.locA, r.locB, false);
+      }
+    });
+  }
 
   // Multi-stop helpers
   document.getElementById('btnSelectAllStops').addEventListener('click', () => {

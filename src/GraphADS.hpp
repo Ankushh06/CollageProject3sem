@@ -139,6 +139,12 @@ private:
     }
 
 public:
+    static std::string trimString(const std::string& str) {
+        size_t first = str.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos) return "";
+        size_t last = str.find_last_not_of(" \t\r\n");
+        return str.substr(first, (last - first + 1));
+    }
     GraphADS() : criterion("DISTANCE") {
         InitializeCriticalSection(&cs);
         resetSample();
@@ -271,7 +277,7 @@ public:
     void setCriterion(const std::string& c) { criterion = (c == "TIME") ? "TIME" : "DISTANCE"; }
 
     int findLocationId(const std::string& name) const {
-        auto it = nameToId.find(toLower(name));
+        auto it = nameToId.find(toLower(trimString(name)));
         return (it != nameToId.end()) ? it->second : -1;
     }
 
@@ -530,9 +536,11 @@ public:
     }
 
     bool toggleRoad(const std::string& from, const std::string& to, bool active) {
+        std::string tf = toLower(trimString(from));
+        std::string tt = toLower(trimString(to));
         for (auto& r : roads) {
-            if ((toLower(r.locA) == toLower(from) && toLower(r.locB) == toLower(to)) ||
-                (toLower(r.locB) == toLower(from) && toLower(r.locA) == toLower(to))) {
+            if ((toLower(r.locA) == tf && toLower(r.locB) == tt) ||
+                (toLower(r.locB) == tf && toLower(r.locA) == tt)) {
                 r.isActive = active;
                 rebuildAdjacencyList();
                 std::string act = active ? "REOPENED" : "CLOSED";
@@ -542,6 +550,36 @@ public:
         }
         return false;
     }
+
+    bool toggleRoadById(int roadId, bool active) {
+        for (auto& r : roads) {
+            if (r.roadId == roadId) {
+                r.isActive = active;
+                rebuildAdjacencyList();
+                std::string act = active ? "REOPENED" : "CLOSED";
+                audit.insert(audit.begin(), { static_cast<int>(audit.size() + 1), currentTimestamp(), r.roadId, act, r.locA + " <-> " + r.locB });
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int reopenAllRoads() {
+        int count = 0;
+        for (auto& r : roads) {
+            if (!r.isActive) {
+                r.isActive = true;
+                count++;
+            }
+        }
+        if (count > 0) {
+            rebuildAdjacencyList();
+            audit.insert(audit.begin(), { static_cast<int>(audit.size() + 1), currentTimestamp(), 0, "REOPENED_ALL", "All roads reopened" });
+        }
+        return count;
+    }
+
+    const std::vector<RoadInfo>& getRoads() const { return roads; }
 
     int saveTrip(const TripRecord& tr) {
         TripRecord rec = tr;

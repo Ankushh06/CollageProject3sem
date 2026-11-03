@@ -116,10 +116,13 @@ int main(int argc, char* argv[]) {
             case 2: {
                 std::string src, dst;
                 std::cout << "  Enter Source Location: ";
-                std::cin.ignore();
+                std::cin.ignore(10000, '\n');
                 std::getline(std::cin, src);
                 std::cout << "  Enter Destination Location: ";
                 std::getline(std::cin, dst);
+
+                src = ADS::GraphADS::trimString(src);
+                dst = ADS::GraphADS::trimString(dst);
 
                 graph.lock();
                 DijkstraResult res = graph.dijkstra(src, dst);
@@ -179,40 +182,66 @@ int main(int argc, char* argv[]) {
                 break;
             }
             case 4: {
-                std::string a, b;
-                std::cout << "  From Location: ";
-                std::cin.ignore();
-                std::getline(std::cin, a);
-                std::cout << "  To Location  : ";
-                std::getline(std::cin, b);
+                std::cin.ignore(10000, '\n');
+                std::cout << "  Close a road by Road ID (1-40) or Start Location Name: ";
+                std::string inputA;
+                std::getline(std::cin, inputA);
+                inputA = ADS::GraphADS::trimString(inputA);
 
                 graph.lock();
-                bool ok = graph.toggleRoad(a, b, false);
+                bool ok = false;
+                std::string roadDesc = "";
+                bool isNumeric = !inputA.empty() && std::all_of(inputA.begin(), inputA.end(), ::isdigit);
+                if (isNumeric) {
+                    int rId = std::stoi(inputA);
+                    ok = graph.toggleRoadById(rId, false);
+                    roadDesc = "Road #" + std::to_string(rId);
+                } else {
+                    std::cout << "  To Location Name: ";
+                    std::string inputB;
+                    std::getline(std::cin, inputB);
+                    inputB = ADS::GraphADS::trimString(inputB);
+                    ok = graph.toggleRoad(inputA, inputB, false);
+                    roadDesc = "'" + inputA + " <-> " + inputB + "'";
+                }
                 graph.unlock();
 
                 if (ok) {
-                    std::cout << "  Road '" << a << " <-> " << b << "' is now CLOSED (in-memory graph edge disabled).\n";
+                    std::cout << "  >> Road " << roadDesc << " is now CLOSED (in-memory graph edge disabled).\n";
                 } else {
-                    std::cout << "  Road not found.\n";
+                    std::cout << "  >> Road not found. Enter choice 1 to view all roads and IDs.\n";
                 }
                 break;
             }
             case 5: {
-                std::string a, b;
-                std::cout << "  From Location: ";
-                std::cin.ignore();
-                std::getline(std::cin, a);
-                std::cout << "  To Location  : ";
-                std::getline(std::cin, b);
+                std::cin.ignore(10000, '\n');
+                std::cout << "  Reopen a road by Road ID (1-40) or Start Location Name: ";
+                std::string inputA;
+                std::getline(std::cin, inputA);
+                inputA = ADS::GraphADS::trimString(inputA);
 
                 graph.lock();
-                bool ok = graph.toggleRoad(a, b, true);
+                bool ok = false;
+                std::string roadDesc = "";
+                bool isNumeric = !inputA.empty() && std::all_of(inputA.begin(), inputA.end(), ::isdigit);
+                if (isNumeric) {
+                    int rId = std::stoi(inputA);
+                    ok = graph.toggleRoadById(rId, true);
+                    roadDesc = "Road #" + std::to_string(rId);
+                } else {
+                    std::cout << "  To Location Name: ";
+                    std::string inputB;
+                    std::getline(std::cin, inputB);
+                    inputB = ADS::GraphADS::trimString(inputB);
+                    ok = graph.toggleRoad(inputA, inputB, true);
+                    roadDesc = "'" + inputA + " <-> " + inputB + "'";
+                }
                 graph.unlock();
 
                 if (ok) {
-                    std::cout << "  Road '" << a << " <-> " << b << "' is now REOPENED (in-memory graph edge restored).\n";
+                    std::cout << "  >> Road " << roadDesc << " is now REOPENED (in-memory graph edge restored).\n";
                 } else {
-                    std::cout << "  Road not found.\n";
+                    std::cout << "  >> Road not found. Enter choice 1 to view all roads and IDs.\n";
                 }
                 break;
             }

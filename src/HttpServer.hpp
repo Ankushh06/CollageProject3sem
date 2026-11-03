@@ -230,10 +230,16 @@ private:
                 }
             }
             else if (endpoint == "roads/toggle") {
+                int roadId = JsonHelper::extractInt(body, "roadId", 0);
                 std::string from = JsonHelper::extractString(body, "from");
                 std::string to = JsonHelper::extractString(body, "to");
                 bool active = JsonHelper::extractBool(body, "active", true);
-                bool ok = graph->toggleRoad(from, to, active);
+                bool ok = false;
+                if (roadId > 0) {
+                    ok = graph->toggleRoadById(roadId, active);
+                } else {
+                    ok = graph->toggleRoad(from, to, active);
+                }
                 graph->unlock();
                 if (ok) {
                     std::string res = "{\"success\":true,\"active\":" + std::string(active ? "true" : "false") + "}";
@@ -241,6 +247,12 @@ private:
                 } else {
                     sendResponse(sock, 404, "Not Found", "application/json", "{\"error\":\"Road not found\"}");
                 }
+            }
+            else if (endpoint == "roads/reopen-all") {
+                int count = graph->reopenAllRoads();
+                graph->unlock();
+                std::string res = "{\"success\":true,\"reopened\":" + std::to_string(count) + "}";
+                sendResponse(sock, 200, "OK", "application/json", res);
             }
             else if (endpoint == "sample-data") {
                 graph->resetSample();

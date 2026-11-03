@@ -99,7 +99,7 @@ function resetSample() {
 }
 
 // Dijkstra Algorithm
-function dijkstra(srcName, dstName, criterion = 'DISTANCE') {
+function dijkstra(srcName, dstName, criterion = 'DISTANCE', closedRoads = []) {
   const isTime = (criterion === 'TIME');
   const locMap = new Map();
   state.locations.forEach(l => locMap.set(l.name.toLowerCase(), l));
@@ -108,12 +108,28 @@ function dijkstra(srcName, dstName, criterion = 'DISTANCE') {
   const dstLoc = locMap.get(dstName.trim().toLowerCase());
   if (!srcLoc || !dstLoc) return { valid: false };
 
+  const isClosedRoad = (r) => {
+    if (r.isActive === false || r.isActive === 'false' || r.isActive === 0) return true;
+    if (!closedRoads || closedRoads.length === 0) return false;
+    const a = r.locA.toLowerCase();
+    const b = r.locB.toLowerCase();
+    return closedRoads.some(cr => {
+      if (typeof cr === 'number' || (typeof cr === 'string' && !isNaN(cr))) {
+        return r.roadId === Number(cr);
+      }
+      if (cr && cr.roadId && r.roadId === cr.roadId) return true;
+      const ca = (cr.from || cr.locA || '').toLowerCase();
+      const cb = (cr.to || cr.locB || '').toLowerCase();
+      return (ca === a && cb === b) || (ca === b && cb === a);
+    });
+  };
+
   // Build adjacency list for open roads
   const adj = new Map();
   state.locations.forEach(l => adj.set(l.name, []));
 
   state.roads.forEach(r => {
-    if (!r.isActive) return;
+    if (isClosedRoad(r)) return;
     const w = isTime ? r.travelTimeMin : r.distanceKm;
     if (adj.has(r.locA)) adj.get(r.locA).push({ to: r.locB, cost: w, km: r.distanceKm, min: r.travelTimeMin });
     if (adj.has(r.locB)) adj.get(r.locB).push({ to: r.locA, cost: w, km: r.distanceKm, min: r.travelTimeMin });
@@ -194,7 +210,7 @@ function dijkstra(srcName, dstName, criterion = 'DISTANCE') {
 }
 
 // TSP Multi-stop tour planner
-function planTSP(depotName, stops, returnToDepot = true, criterion = 'DISTANCE') {
+function planTSP(depotName, stops, returnToDepot = true, criterion = 'DISTANCE', closedRoads = []) {
   if (!stops || stops.length === 0) return { valid: false };
 
   const unvisited = [...new Set(stops.filter(s => s !== depotName))];
@@ -213,7 +229,7 @@ function planTSP(depotName, stops, returnToDepot = true, criterion = 'DISTANCE')
     let minCost = Infinity;
 
     for (let i = 0; i < unvisited.length; i++) {
-      const sub = dijkstra(current, unvisited[i], criterion);
+      const sub = dijkstra(current, unvisited[i], criterion, closedRoads);
       if (sub.valid) {
         const cost = (criterion === 'TIME') ? sub.minutes : sub.km;
         if (cost < minCost) {
@@ -241,7 +257,7 @@ function planTSP(depotName, stops, returnToDepot = true, criterion = 'DISTANCE')
   }
 
   if (returnToDepot) {
-    const returnPlan = dijkstra(current, depotName, criterion);
+    const returnPlan = dijkstra(current, depotName, criterion, closedRoads);
     if (returnPlan.valid) {
       for (let i = 1; i < returnPlan.routeNames.length; i++) {
         fullPath.push(returnPlan.routeNames[i]);
